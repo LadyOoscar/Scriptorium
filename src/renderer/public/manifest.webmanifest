@@ -1,0 +1,14 @@
+{
+  "id": "/Scriptorium/",
+  "name": "Scriptorium",
+  "short_name": "Scriptorium",
+  "description": "Atelier de création littéraire",
+  "lang": "fr",
+  "start_url": "/Scriptorium/",
+  "scope": "/Scriptorium/",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#f5f1e8",
+  "orientation": "any",
+  "icons": []
+}
