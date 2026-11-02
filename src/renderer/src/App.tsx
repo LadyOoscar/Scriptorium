@@ -13,6 +13,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [dirty, setDirty] = useState(false)
+  const [fontFamily, setFontFamily] = useState('Georgia')
   const activeDocument = documents.find((document) => document.id === activeId) ?? null
 
   const editor = useEditor({
@@ -36,6 +37,9 @@ export default function App() {
     if (!editor || !activeDocument) return
     const current = editor.getHTML()
     if (current !== activeDocument.content) editor.commands.setContent(activeDocument.content || blankContent)
+    const nextFont = activeDocument.fontFamily || 'Georgia'
+    setFontFamily(nextFont)
+    editor.view.dom.style.fontFamily = nextFont
   }, [activeId, editor])
 
   useEffect(() => {
@@ -69,6 +73,14 @@ export default function App() {
     setDocuments((items) => [document, ...items])
     setActiveId(document.id)
     editor?.commands.setContent(blankContent)
+  }
+
+  async function changeFont(nextFont: string) {
+    setFontFamily(nextFont)
+    if (!activeDocument || !editor) return
+    editor.view.dom.style.fontFamily = nextFont
+    const updated = await window.scriptorium.saveDocument({ ...activeDocument, fontFamily: nextFont })
+    setDocuments((items) => items.map((item) => item.id === updated.id ? updated : item))
   }
 
   async function renameDocument(title: string) {
@@ -128,6 +140,21 @@ export default function App() {
             <button className="icon-button" title="Titre" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={17}/></button>
             <button className="icon-button" title="Liste" onClick={() => editor?.chain().focus().toggleBulletList().run()}><List size={17}/></button>
             <button className="icon-button" title="Citation" onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote size={17}/></button>
+            <div className="toolbar-divider"/>
+            <label className="font-picker-label" htmlFor="font-picker">Police</label>
+            <select id="font-picker" className="font-picker" value={fontFamily} onChange={(event) => changeFont(event.target.value)} disabled={!activeDocument}>
+              <option value="Georgia">Georgia</option>
+              <option value="Palatino Linotype">Palatino</option>
+              <option value="Garamond">Garamond</option>
+              <option value="Book Antiqua">Book Antiqua</option>
+              <option value="Cambria">Cambria</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Arial">Arial</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Trebuchet MS">Trebuchet</option>
+              <option value="Courier New">Courier New</option>
+            </select>
             <div className="toolbar-spacer"/>
             {activeDocument && <button className="icon-button danger" title="Supprimer le manuscrit" onClick={deleteDocument}><Trash2 size={16}/></button>}
           </div>
