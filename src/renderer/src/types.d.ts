@@ -3,6 +3,9 @@ type ScriptoriumDocument = {
   title: string
   content: string
   fontFamily?: string
+  fontSize?: number
+  lineSpacing?: string
+  pageMargin?: string
   updatedAt: string
 }
 
