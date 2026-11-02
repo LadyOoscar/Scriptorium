@@ -12,7 +12,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [saved, setSaved] = useState(true)
+  const [dirty, setDirty] = useState(false)
   const activeDocument = documents.find((document) => document.id === activeId) ?? null
 
   const editor = useEditor({
@@ -22,7 +22,7 @@ export default function App() {
     ],
     content: blankContent,
     editorProps: { attributes: { class: 'writing-surface', spellcheck: 'true' } },
-    onUpdate: () => setSaved(false)
+    onUpdate: () => setDirty(true)
   })
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function App() {
   }, [activeId, editor])
 
   useEffect(() => {
-    if (!editor || !activeId) return
+    if (!editor || !activeId || !dirty) return
     const timer = window.setTimeout(async () => {
       const current = documents.find((item) => item.id === activeId)
       if (!current) return
@@ -49,10 +49,10 @@ export default function App() {
         updatedAt: new Date().toISOString()
       })
       setDocuments((items) => items.map((item) => item.id === updated.id ? updated : item))
-      setSaved(true)
+      setDirty(false)
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [editor, activeId, documents, saved])
+  }, [editor, activeId, dirty])
 
   const filteredDocuments = useMemo(() => documents.filter((item) =>
     item.title.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr'))
@@ -104,7 +104,7 @@ export default function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><div className="brand-mark"><Feather size={19} /></div><span>scriptorium</span><i>atelier d’écriture</i></div>
-        <div className="topbar-right"><span className={saved ? 'save-state' : 'save-state pending'}><span />{saved ? 'Enregistré localement' : 'Enregistrement…'}</span><button className="icon-button" title="Exporter une sauvegarde" onClick={exportBackup}><Download size={17}/></button><button className="icon-button" title="Importer une sauvegarde" onClick={importBackup}><Upload size={17}/></button></div>
+        <div className="topbar-right"><span className={dirty ? 'save-state pending' : 'save-state'}><span />{dirty ? 'Enregistrement…' : 'Enregistré localement'}</span><button className="icon-button" title="Exporter une sauvegarde" onClick={exportBackup}><Download size={17}/></button><button className="icon-button" title="Importer une sauvegarde" onClick={importBackup}><Upload size={17}/></button></div>
       </header>
       <div className="workspace">
         {sidebarOpen && <aside className="sidebar">
