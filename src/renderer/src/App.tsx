@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -14,6 +14,9 @@ export default function App() {
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null)
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null)
   const [showRelationshipMap, setShowRelationshipMap] = useState(false)
+  const [dragPositions, setDragPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const draggingEntityId = useRef<string | null>(null)
+  const didDrag = useRef(false)
   const [view, setView] = useState('projects')
   const [query, setQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -192,8 +195,41 @@ export default function App() {
   const entities = workspace.entities.filter(e => e.projectId === activeProjectId)
   const activeEntity = entities.find(e => e.id === activeEntityId) ?? null
   const entityRelations = activeEntity ? (workspace.relations || []).filter(r => r.fromEntityId === activeEntity.id || r.toEntityId === activeEntity.id) : []
-  const graphPositions = entities.map((entity, index) => { const angle = -Math.PI / 2 + (2 * Math.PI * index / Math.max(entities.length, 1)); const radius = entities.length <= 1 ? 0 : entities.length <= 4 ? 145 : 205; return { id: entity.id, name: entity.name, x: 400 + Math.cos(angle) * radius, y: 280 + Math.sin(angle) * radius } })
+  const graphPositions = entities.map((entity, index) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * index / Math.max(entities.length, 1))
+    const radius = entities.length <= 1 ? 0 : entities.length <= 4 ? 145 : 205
+    const saved = workspace.graphPositions?.[entity.id]
+    const temporary = dragPositions[entity.id]
+    return { id: entity.id, name: entity.name, x: temporary?.x ?? saved?.x ?? 400 + Math.cos(angle) * radius, y: temporary?.y ?? saved?.y ?? 280 + Math.sin(angle) * radius }
+  })
   const graphPosition = (id: string) => graphPositions.find(p => p.id === id)
+  function moveGraphNode(entityId: string, event: React.PointerEvent<HTMLButtonElement>) {
+    if (draggingEntityId.current !== entityId) return
+    const map = event.currentTarget.parentElement
+    if (!map) return
+    const rect = map.getBoundingClientRect()
+    const x = Math.max(48, Math.min(752, (event.clientX - rect.left) / rect.width * 800))
+    const y = Math.max(48, Math.min(512, (event.clientY - rect.top) / rect.height * 560))
+    setDragPositions(current => ({ ...current, [entityId]: { x, y } }))
+    didDrag.current = true
+  }
+  async function finishGraphNode(entityId: string) {
+    if (!workspace) return
+    draggingEntityId.current = null
+    const position = dragPositions[entityId]
+    if (position) {
+      const next = { ...workspace, graphPositions: { ...(workspace.graphPositions || {}), [entityId]: position } }
+      await save(next)
+    }
+    window.setTimeout(() => { didDrag.current = false }, 0)
+  }
+  async function resetRelationshipMap() {
+    if (!workspace) return
+    const nextPositions = { ...(workspace.graphPositions || {}) }
+    entities.forEach(entity => { delete nextPositions[entity.id] })
+    setDragPositions({})
+    await save({ ...workspace, graphPositions: nextPositions })
+  }
   const notes = workspace.notes.filter(n => n.projectId === activeProjectId)
   const wordCount = projectDocuments.reduce((sum, doc) => sum + ((doc.content.replace(/<[^>]*>/g, ' ').match(/[\p{L}\p{N}’'-]+/gu) || []).length), 0)
   const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }]
@@ -231,9 +267,9 @@ export default function App() {
         {view === 'encyclopedia' && <div className="content-scroll">
           {!activeEntity ? <>
             <div className="module-heading"><span className="eyebrow">BÂTIR VOTRE UNIVERS</span><h1>Personnages</h1><p>Des fiches simples à compléter, à enrichir et à relier entre elles.</p><div className="character-list-actions"><button className="primary-button" onClick={createEntity}><Plus size={16}/> Nouveau personnage</button><button className="secondary-button" onClick={() => setShowRelationshipMap(v => !v)}>{showRelationshipMap ? 'Afficher les fiches' : 'Voir la carte des relations'}</button></div></div>
-            {showRelationshipMap ? <section className="relationship-map-section"><div className="relationship-map-heading"><div><h2>Carte des relations</h2><p>Les traits relient les personnages. Sélectionnez un portrait pour ouvrir sa fiche.</p></div><span>{entities.length} personnage(s) · {(workspace.relations || []).filter(r => r.projectId === activeProjectId).length} lien(s)</span></div>
-              {entities.length === 0 ? <p className="empty-hint">Ajoutez des personnages pour construire votre carte.</p> : <div className="relationship-map"><svg className="relationship-lines" viewBox="0 0 800 560" role="img" aria-label="Liens entre les personnages">{(workspace.relations || []).filter(r => r.projectId === activeProjectId).map(r => { const a = graphPosition(r.fromEntityId); const b = graphPosition(r.toEntityId); return a && b ? <g key={r.id}><line x1={a.x} y1={a.y} x2={b.x} y2={b.y}/><text x={(a.x+b.x)/2} y={(a.y+b.y)/2-7}>{r.fromLabel}</text></g> : null })}</svg>{graphPositions.map((p,index) => <button key={p.id} className="relationship-node" style={{left:(p.x/800*100)+'%',top:(p.y/560*100)+'%'}} onClick={() => {setActiveEntityId(p.id);setShowRelationshipMap(false)}}><span className="relationship-node-mark">{p.name.trim().charAt(0).toLocaleUpperCase('fr')}</span><strong>{p.name || 'Sans nom'}</strong><small>{entities[index]?.role || 'Personnage'}</small></button>)}</div>}
-              <div className="relationship-legend"><span><i/> Personnage</span><span><i/> Relation</span></div>
+            {showRelationshipMap ? <section className="relationship-map-section"><div className="relationship-map-heading"><div><h2>Carte des relations</h2><p>Faites glisser les personnages pour organiser votre univers. Leurs positions sont sauvegardées automatiquement.</p></div><div className="relationship-map-tools"><span>{entities.length} personnage(s) · {(workspace.relations || []).filter(r => r.projectId === activeProjectId).length} lien(s)</span><button className="secondary-button map-reset-button" onClick={resetRelationshipMap}>Réinitialiser la disposition</button></div></div>
+              {entities.length === 0 ? <p className="empty-hint">Ajoutez des personnages pour construire votre carte.</p> : <div className="relationship-map"><svg className="relationship-lines" viewBox="0 0 800 560" role="img" aria-label="Liens entre les personnages">{(workspace.relations || []).filter(r => r.projectId === activeProjectId).map(r => { const a = graphPosition(r.fromEntityId); const b = graphPosition(r.toEntityId); return a && b ? <g key={r.id}><line x1={a.x} y1={a.y} x2={b.x} y2={b.y}/><text x={(a.x+b.x)/2} y={(a.y+b.y)/2-7}>{r.fromLabel}</text></g> : null })}</svg>{graphPositions.map((p,index) => <button key={p.id} className="relationship-node" style={{left:(p.x/800*100)+'%',top:(p.y/560*100)+'%'}} onPointerDown={event => { event.preventDefault(); draggingEntityId.current = p.id; didDrag.current = false; event.currentTarget.setPointerCapture(event.pointerId) }} onPointerMove={event => moveGraphNode(p.id,event)} onPointerUp={() => finishGraphNode(p.id)} onPointerCancel={() => finishGraphNode(p.id)} onClick={() => { if (didDrag.current) return; setActiveEntityId(p.id); setShowRelationshipMap(false) }} title="Faire glisser pour déplacer"><span className="relationship-node-mark">{p.name.trim().charAt(0).toLocaleUpperCase('fr')}</span><strong>{p.name || 'Sans nom'}</strong><small>{entities[index]?.role || 'Personnage'}</small></button>)}</div>}
+              <div className="relationship-legend"><span><i/> Personnage</span><span><i/> Relation</span><span className="map-drag-hint">↔ Déplacement à la souris ou au doigt</span></div>
             </section> : <div className="entity-grid">{entities.map(e => <article className="info-card" key={e.id}><span className="card-kicker">{e.type}</span><h3>{e.name}</h3><p>{e.role || e.description || 'Fiche à compléter.'}</p><button className="text-action" onClick={() => setActiveEntityId(e.id)}>Ouvrir la fiche <ChevronRight size={13}/></button></article>)}{entities.length === 0 && <p className="empty-hint">Aucun personnage pour le moment. Créez votre première fiche.</p>}</div>}
           </> : <>
             <div className="module-heading"><button className="text-action" onClick={() => setActiveEntityId(null)}>← Retour aux personnages</button><span className="eyebrow">FICHE PERSONNAGE</span><input className="character-name-input" value={activeEntity.name} onChange={e => updateEntity(activeEntity.id,{name:e.target.value})} aria-label="Nom du personnage"/><p>Les champs sont facultatifs. Complétez uniquement ce qui vous est utile.</p></div>
