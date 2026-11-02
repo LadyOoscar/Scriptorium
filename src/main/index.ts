@@ -4,9 +4,10 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 type Project = { id: string; title: string; summary: string; createdAt: string; updatedAt: string }
 type DocumentRecord = { id: string; projectId?: string; title: string; content: string; fontFamily?: string; fontSize?: number; lineSpacing?: string; pageMargin?: string; pageFormat?: string; orientation?: string; pageNumbers?: boolean; updatedAt: string }
-type StoryEntity = { id: string; projectId: string; type: string; name: string; description: string; updatedAt: string }
+type StoryEntity = { id: string; projectId: string; type: string; name: string; description: string; [key: string]: unknown; updatedAt: string }
+type CharacterRelation = { id: string; projectId: string; fromEntityId: string; toEntityId: string; fromLabel: string; toLabel: string; description: string }
 type IdeaNote = { id: string; projectId: string; title: string; content: string; updatedAt: string }
-type Workspace = { version: number; projects: Project[]; documents: DocumentRecord[]; entities: StoryEntity[]; notes: IdeaNote[]; modules: Record<string, boolean> }
+type Workspace = { version: number; projects: Project[]; documents: DocumentRecord[]; entities: StoryEntity[]; notes: IdeaNote[]; relations?: CharacterRelation[]; modules: Record<string, boolean> }
 
 const defaultModules = { manuscripts: true, encyclopedia: true, notes: true, progress: true }
 const workspacePath = () => join(app.getPath('userData'), 'scriptorium-library.json')
@@ -30,11 +31,12 @@ async function readWorkspace(): Promise<Workspace> {
       documents,
       entities: Array.isArray(raw.entities) ? raw.entities : [],
       notes: Array.isArray(raw.notes) ? raw.notes : [],
+      relations: Array.isArray(raw.relations) ? raw.relations : [],
       modules: { ...defaultModules, ...(raw.modules || {}) }
     }
   } catch {
     const now = new Date().toISOString()
-    return { version: 2, projects: [{ id: 'project-default', title: 'Mon premier projet', summary: 'Votre espace de création littéraire.', createdAt: now, updatedAt: now }], documents: [], entities: [], notes: [], modules: defaultModules }
+    return { version: 2, projects: [{ id: 'project-default', title: 'Mon premier projet', summary: 'Votre espace de création littéraire.', createdAt: now, updatedAt: now }], documents: [], entities: [], notes: [], relations: [], modules: defaultModules }
   }
 }
 
@@ -72,6 +74,7 @@ ipcMain.handle('backup:import', async () => {
     documents: imported.documents.map((doc: DocumentRecord) => ({ ...doc, projectId: doc.projectId || (imported.projects?.[0]?.id ?? 'project-default') })),
     entities: Array.isArray(imported.entities) ? imported.entities : [],
     notes: Array.isArray(imported.notes) ? imported.notes : [],
+    relations: Array.isArray(imported.relations) ? imported.relations : [],
     modules: { ...defaultModules, ...(imported.modules || {}) }
   }
   await writeWorkspace(normalized)
