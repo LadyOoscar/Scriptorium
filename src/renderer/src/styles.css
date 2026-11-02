@@ -59,3 +59,8 @@ button{cursor:pointer}
 .statusbar>span:first-child{display:flex;align-items:center;gap:7px}
 .status-dot{width:6px;height:6px}
 @media(max-width:1100px){.sidebar{width:230px}.page-wrap{padding:40px 45px}.document-title{font-size:26px}}
+
+.font-picker-label{font-size:10px;color:#a39a89;margin-left:3px}
+.font-picker{height:30px;max-width:150px;padding:0 25px 0 9px;border:1px solid #e5ded2;border-radius:6px;background:#fffdf8;color:#625b4e;font-size:11px;outline:none}
+.font-picker:focus{border-color:#b9a17b}
+.font-picker:disabled{opacity:.45}
