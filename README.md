@@ -1,37 +1,28 @@
 # Scriptorium
 
-Scriptorium est un atelier d'écriture de bureau pour Windows. Le projet privilégie le stockage local et les sauvegardes exportables.
+Atelier de création littéraire pour Windows, avec stockage local et sauvegardes exportables.
 
-## Stack
+## Modules de la version 0.2.0
+- Projets littéraires indépendants avec présentation et statistiques.
+- Manuscrits organisés par projet, avec réglages typographiques par chapitre.
+- Encyclopédie de l'univers : fiches de personnages, lieux, peuples, objets et créatures.
+- Carnet d'idées.
+- Suivi de progression : mots, chapitres, fiches et idées.
+- Activation/désactivation individuelle des modules sans suppression des données.
+- Sauvegarde JSON complète et import de l'ancienne bibliothèque.
 
-- Electron + Vite
-- React + TypeScript
-- TipTap pour l'édition de texte
-- Bibliothèque conservée localement dans le dossier de données utilisateur de l'application
-
-## Prérequis
-
-- Windows 10 ou 11
-- Node.js 20 ou plus récent
-- npm
+## Technique
+Electron, electron-vite, React, TypeScript et TipTap. Les données sont stockées localement dans le dossier utilisateur de l'application.
 
 ## Développement
-
 ```bash
 npm install
 npm run dev
 ```
 
-## Construire l'installateur Windows
-
+## Installateur Windows
 ```bash
 npm run dist:win
 ```
 
-L'installateur est généré dans le dossier `release`.
-
-## État du prototype
-
-Version 0.1.0 : bibliothèque locale, création et suppression de manuscrits, édition riche de base, sauvegarde JSON et import/export de bibliothèque.
-
-Les mises à jour automatiques avec demande de confirmation seront ajoutées dans une étape dédiée avant publication de versions installables.
+L'installateur NSIS est produit dans `release`.
