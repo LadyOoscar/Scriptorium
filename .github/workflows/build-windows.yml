@@ -1,4 +1,4 @@
-name: Build Scriptorium for Windows
+name: Build Scriptorium for Windows and Android
 
 on:
   workflow_dispatch:
@@ -8,27 +8,46 @@ on:
       - 'src/**'
       - 'package.json'
       - 'electron.vite.config.ts'
+      - 'vite.web.config.ts'
       - 'tsconfig.json'
-      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install
-      - name: Build Windows installer
-        run: npm run dist:win
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
+      - run: npm install
+      - run: npm run dist:win
+      - uses: actions/upload-artifact@v4
         with:
           name: Scriptorium-Windows-Installer
           path: release/*.exe
           if-no-files-found: error
           retention-days: 14
+
+  android-web:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run build:web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+      - id: deployment
+        uses: actions/deploy-pages@v4
