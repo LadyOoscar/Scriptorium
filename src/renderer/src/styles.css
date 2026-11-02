@@ -72,3 +72,26 @@ button{cursor:pointer}
 .page-wrap.margin-comfortable{padding-left:66px;padding-right:66px}
 .page-wrap.margin-wide{padding-left:92px;padding-right:92px}
 @media(max-width:1100px){.page-wrap.margin-narrow{padding-left:30px;padding-right:30px}.page-wrap.margin-comfortable{padding-left:45px;padding-right:45px}.page-wrap.margin-wide{padding-left:60px;padding-right:60px}}
+
+.page-wrap.format-a4{--paper-width:794px;--paper-height:1123px}
+.page-wrap.format-a5{--paper-width:559px;--paper-height:794px}
+.page-wrap.format-letter{--paper-width:816px;--paper-height:1056px}
+.page-wrap.orientation-landscape{--paper-width:1123px;--paper-height:794px}
+.page-wrap{width:min(100%,var(--paper-width,794px));min-height:var(--paper-height,1123px);margin:28px auto;padding-top:58px;padding-bottom:58px;background:#fffefa;box-shadow:0 3px 22px #54452b12;position:relative}
+.page-wrap:after{content:' ';display:block}
+.page-wrap.with-page-numbers .page-footer:after{content:'Pagination activée à l’impression';font-size:9px;color:#aaa18f}
+@page{size:A4 portrait;margin:18mm 20mm}
+@page landscape{size:A4 landscape;margin:14mm 16mm}
+@page a5{size:A5 portrait;margin:15mm}
+@page letter{size:Letter portrait;margin:0.7in}
+@media print{
+  body,.app-shell,.workspace,.editor-area{height:auto!important;min-height:0!important;overflow:visible!important;background:white!important}
+  .topbar,.sidebar,.editor-toolbar,.statusbar,.page-meta,.page-footer{display:none!important}
+  .page-wrap{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important;background:white!important}
+  .page-wrap.orientation-landscape{page:landscape}
+  .page-wrap.format-a5{page:a5}
+  .page-wrap.format-letter{page:letter}
+  .document-title{border:0!important}
+  .writing-surface{outline:0!important}
+  .page-wrap.with-page-numbers .writing-surface{counter-reset:page}
+}
