@@ -52,3 +52,17 @@
   .relationship-legend{flex-wrap:wrap;gap:10px}
   .map-drag-hint{margin-left:0;width:100%}
 }
+
+/* Android sidebar menu controls */
+.sidebar-heading-actions{display:flex;align-items:center;gap:4px}
+.mobile-sidebar-close{display:none}
+@media(max-width:760px){
+  .mobile-sidebar-close{display:grid}
+  .sidebar{padding-top:14px}
+  .sidebar-heading{min-height:38px}
+  .side-nav{gap:6px;margin-top:12px}
+  .nav-item{min-height:44px;height:44px;font-size:13px}
+  .project-switcher{padding:13px 11px 16px}
+  .project-switcher select{min-height:34px;font-size:13px}
+  .sidebar-bottom{padding-bottom:8px}
+}
