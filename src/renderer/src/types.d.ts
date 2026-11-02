@@ -1,5 +1,7 @@
+type ScriptoriumProject = { id: string; title: string; summary: string; createdAt: string; updatedAt: string }
 type ScriptoriumDocument = {
   id: string
+  projectId?: string
   title: string
   content: string
   fontFamily?: string
@@ -11,13 +13,20 @@ type ScriptoriumDocument = {
   pageNumbers?: boolean
   updatedAt: string
 }
-
+type ScriptoriumEntity = { id: string; projectId: string; type: string; name: string; description: string; updatedAt: string }
+type ScriptoriumNote = { id: string; projectId: string; title: string; content: string; updatedAt: string }
+type ScriptoriumWorkspace = {
+  version: number
+  projects: ScriptoriumProject[]
+  documents: ScriptoriumDocument[]
+  entities: ScriptoriumEntity[]
+  notes: ScriptoriumNote[]
+  modules: Record<string, boolean>
+}
 interface Window {
   scriptorium: {
-    listDocuments(): Promise<ScriptoriumDocument[]>
-    getDocument(id: string): Promise<ScriptoriumDocument | null>
-    saveDocument(document: ScriptoriumDocument): Promise<ScriptoriumDocument>
-    deleteDocument(id: string): Promise<boolean>
+    loadWorkspace(): Promise<ScriptoriumWorkspace>
+    saveWorkspace(workspace: ScriptoriumWorkspace): Promise<boolean>
     exportBackup(): Promise<boolean>
     importBackup(): Promise<boolean>
   }
