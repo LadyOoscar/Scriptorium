@@ -44,7 +44,7 @@
 .map-reset-button{padding:7px 10px;font-size:10px}
 .relationship-node{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .relationship-node:active{cursor:grabbing}
-.relationship-map{touch-action:pan-y}
+.relationship-map{touch-action:none}
 .map-drag-hint{margin-left:auto;color:#a09582}
 @media(max-width:760px){
   .relationship-map-tools{align-items:flex-start;margin-top:10px}
