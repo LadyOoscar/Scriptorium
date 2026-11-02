@@ -2,6 +2,7 @@ type ScriptoriumDocument = {
   id: string
   title: string
   content: string
+  fontFamily?: string
   updatedAt: string
 }
 
