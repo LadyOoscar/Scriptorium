@@ -2,13 +2,14 @@
   "name": "scriptorium",
   "version": "0.1.0",
   "private": true,
-  "description": "Scriptorium, atelier d'ecriture local pour Windows",
+  "description": "Atelier d'ecriture local pour Windows et Android",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "dist:win": "npm run build && electron-builder --win nsis --publish never"
+    "dist:win": "npm run build && electron-builder --win nsis --publish never",
+    "build:web": "vite build --config vite.web.config.ts"
   },
   "dependencies": {
     "@tiptap/extension-placeholder": "^3.0.9",
@@ -32,9 +33,23 @@
   "build": {
     "appId": "fr.scriptorium.desktop",
     "productName": "Scriptorium",
-    "directories": { "output": "release" },
-    "files": ["out/**/*", "package.json"],
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
