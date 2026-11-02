@@ -12,6 +12,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState<ScriptoriumWorkspace | null>(null)
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null)
+  const [activeEntityId, setActiveEntityId] = useState<string | null>(null)
   const [view, setView] = useState('projects')
   const [query, setQuery] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -123,17 +124,41 @@ export default function App() {
   }
   async function createEntity() {
     if (!workspace || !activeProject) return
-    const name = window.prompt('Nom du personnage, lieu, peuple, objet…')
+    const name = window.prompt('Nom du personnage')
     if (!name?.trim()) return
-    const type = window.prompt('Type de fiche : Personnage, Lieu, Peuple, Objet, Créature…', 'Personnage') || 'Autre'
-    const entity: ScriptoriumEntity = { id: newId(), projectId: activeProject.id, type, name: name.trim(), description: '', updatedAt: new Date().toISOString() }
+    const entity: ScriptoriumEntity = { id: newId(), projectId: activeProject.id, type: 'Personnage', name: name.trim(), description: '', customFields: [], updatedAt: new Date().toISOString() }
     await save({ ...workspace, entities: [entity, ...workspace.entities] })
+    setActiveEntityId(entity.id)
   }
-  async function editEntity(entity: ScriptoriumEntity) {
+  async function updateEntity(entityId: string, patch: Partial<ScriptoriumEntity>) {
     if (!workspace) return
-    const description = window.prompt('Description / notes', entity.description)
-    if (description === null) return
-    await save({ ...workspace, entities: workspace.entities.map(e => e.id === entity.id ? { ...e, description, updatedAt: new Date().toISOString() } : e) })
+    const next = { ...workspace, entities: workspace.entities.map(e => e.id === entityId ? { ...e, ...patch, updatedAt: new Date().toISOString() } : e) }
+    await save(next)
+  }
+  async function addCustomField(entity: ScriptoriumEntity) {
+    const label = window.prompt('Nom du nouveau champ')
+    if (!label?.trim()) return
+    await updateEntity(entity.id, { customFields: [...(entity.customFields || []), { id: newId(), label: label.trim(), value: '' }] })
+  }
+  async function addCharacterRelation(entity: ScriptoriumEntity) {
+    if (!workspace) return
+    const candidates = entities.filter(e => e.id !== entity.id)
+    if (!candidates.length) { window.alert('Créez d’abord un autre personnage pour établir une relation.'); return }
+    const choices = candidates.map((e, i) => (i + 1) + '. ' + e.name).join('\n')
+    const choice = window.prompt('Avec quel personnage créer un lien ?\n' + choices + '\n\nSaisissez son numéro.')
+    const target = candidates[Number(choice) - 1]
+    if (!target) return
+    const fromLabel = window.prompt('Comment ' + entity.name + ' considère-t-il ' + target.name + ' ?', 'Ami·e')
+    if (!fromLabel?.trim()) return
+    const toLabel = window.prompt('Et comment ' + target.name + ' considère-t-il ' + entity.name + ' ?', fromLabel.trim())
+    if (toLabel === null) return
+    const description = window.prompt('Précisions sur leur relation (facultatif)', '') ?? ''
+    const relation: ScriptoriumRelation = { id: newId(), projectId: entity.projectId, fromEntityId: entity.id, toEntityId: target.id, fromLabel: fromLabel.trim(), toLabel: toLabel.trim() || fromLabel.trim(), description }
+    await save({ ...workspace, relations: [...(workspace.relations || []), relation] })
+  }
+  async function deleteRelation(relationId: string) {
+    if (!workspace || !window.confirm('Supprimer cette relation ?')) return
+    await save({ ...workspace, relations: (workspace.relations || []).filter(r => r.id !== relationId) })
   }
   async function createNote() {
     if (!workspace || !activeProject) return
@@ -164,6 +189,8 @@ export default function App() {
 
   if (!workspace) return <main className="loading-screen"><Feather size={28}/><span>Ouverture de votre atelier…</span></main>
   const entities = workspace.entities.filter(e => e.projectId === activeProjectId)
+  const activeEntity = entities.find(e => e.id === activeEntityId) ?? null
+  const entityRelations = activeEntity ? (workspace.relations || []).filter(r => r.fromEntityId === activeEntity.id || r.toEntityId === activeEntity.id) : []
   const notes = workspace.notes.filter(n => n.projectId === activeProjectId)
   const wordCount = projectDocuments.reduce((sum, doc) => sum + ((doc.content.replace(/<[^>]*>/g, ' ').match(/[\p{L}\p{N}’'-]+/gu) || []).length), 0)
   const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }]
@@ -198,7 +225,38 @@ export default function App() {
           <div className="project-grid">{workspace.projects.map(p => <button key={p.id} className={p.id === activeProjectId ? 'project-card selected' : 'project-card'} onClick={() => {setActiveProjectId(p.id);setActiveDocumentId(null)}}><div className="project-card-icon"><Feather size={19}/></div><strong>{p.title}</strong><span>{p.summary || 'Projet sans résumé'}</span><small>{workspace.documents.filter(d => d.projectId === p.id).length} chapitre(s)</small></button>)}</div>
         </div>}
         {view === 'manuscripts' && <>{activeDocument ? <div className={`page-wrap margin-${pageMargin} format-${pageFormat.toLowerCase()} orientation-${orientation} ${pageNumbers ? 'with-page-numbers' : 'without-page-numbers'}`}><input className="document-title" value={activeDocument.title} onChange={e => renameDocument(e.target.value)} aria-label="Titre du chapitre"/><div className="page-meta">{activeProject?.title.toUpperCase()} <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div><EditorContent editor={editor}/><div className="page-footer"><span>Scriptorium</span><span>Écrivez à votre rythme.</span></div></div> : <div className="empty-module"><BookOpen size={32}/><h2>Le manuscrit attend ses mots.</h2><p>Créez un premier chapitre pour commencer à écrire.</p><button className="primary-button" onClick={createChapter}><FilePlus2 size={16}/> Créer un chapitre</button></div>}</>}
-        {view === 'encyclopedia' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">BÂTIR VOTRE UNIVERS</span><h1>Encyclopédie</h1><p>Gardez en mémoire les personnages, lieux, peuples, objets et créatures de votre histoire.</p><button className="primary-button" onClick={createEntity}><Plus size={16}/> Ajouter une fiche</button></div><div className="entity-grid">{entities.map(e => <article className="info-card" key={e.id}><span className="card-kicker">{e.type}</span><h3>{e.name}</h3><p>{e.description || 'Aucune note pour le moment.'}</p><button className="text-action" onClick={() => editEntity(e)}>Modifier la fiche</button></article>)}{entities.length === 0 && <p className="empty-hint">Votre encyclopédie est encore vierge. Donnez un visage à votre univers.</p>}</div></div>}
+        {view === 'encyclopedia' && <div className="content-scroll">
+          {!activeEntity ? <>
+            <div className="module-heading"><span className="eyebrow">BÂTIR VOTRE UNIVERS</span><h1>Personnages</h1><p>Des fiches simples à compléter, à enrichir et à relier entre elles.</p><button className="primary-button" onClick={createEntity}><Plus size={16}/> Nouveau personnage</button></div>
+            <div className="entity-grid">{entities.map(e => <article className="info-card" key={e.id}><span className="card-kicker">{e.type}</span><h3>{e.name}</h3><p>{e.role || e.description || 'Fiche à compléter.'}</p><button className="text-action" onClick={() => setActiveEntityId(e.id)}>Ouvrir la fiche <ChevronRight size={13}/></button></article>)}{entities.length === 0 && <p className="empty-hint">Aucun personnage pour le moment. Créez votre première fiche.</p>}</div>
+          </> : <>
+            <div className="module-heading"><button className="text-action" onClick={() => setActiveEntityId(null)}>← Retour aux personnages</button><span className="eyebrow">FICHE PERSONNAGE</span><input className="character-name-input" value={activeEntity.name} onChange={e => updateEntity(activeEntity.id,{name:e.target.value})} aria-label="Nom du personnage"/><p>Les champs sont facultatifs. Complétez uniquement ce qui vous est utile.</p></div>
+            <div className="character-panel">
+              <h2>Identité</h2><div className="character-form-grid">
+                <label>Âge<input value={activeEntity.age || ''} onChange={e => updateEntity(activeEntity.id,{age:e.target.value})} placeholder="Âge ou tranche d’âge"/></label>
+                <label>Genre<input value={activeEntity.gender || ''} onChange={e => updateEntity(activeEntity.id,{gender:e.target.value})} placeholder="Genre"/></label>
+                <label>Origine<input value={activeEntity.origin || ''} onChange={e => updateEntity(activeEntity.id,{origin:e.target.value})} placeholder="Origine, peuple…"/></label>
+                <label>Rôle dans l’histoire<input value={activeEntity.role || ''} onChange={e => updateEntity(activeEntity.id,{role:e.target.value})} placeholder="Héroïne, antagoniste…"/></label>
+              </div>
+              <h2>Apparence</h2><textarea value={activeEntity.appearance || ''} onChange={e => updateEntity(activeEntity.id,{appearance:e.target.value})} placeholder="Description physique, vêtements, voix, signes distinctifs…"/>
+              <h2>Personnalité</h2><div className="character-form-grid">
+                <label>Traits dominants<input value={activeEntity.personality || ''} onChange={e => updateEntity(activeEntity.id,{personality:e.target.value})} placeholder="Tempérament…"/></label>
+                <label>Qualités<input value={activeEntity.qualities || ''} onChange={e => updateEntity(activeEntity.id,{qualities:e.target.value})} placeholder="Ses forces…"/></label>
+                <label>Défauts<input value={activeEntity.flaws || ''} onChange={e => updateEntity(activeEntity.id,{flaws:e.target.value})} placeholder="Ses faiblesses…"/></label>
+                <label>Peurs<input value={activeEntity.fears || ''} onChange={e => updateEntity(activeEntity.id,{fears:e.target.value})} placeholder="Ce qui l’effraie…"/></label>
+                <label className="wide-field">Motivations<input value={activeEntity.motivations || ''} onChange={e => updateEntity(activeEntity.id,{motivations:e.target.value})} placeholder="Ce qu’il ou elle désire profondément…"/></label>
+              </div>
+              <h2>Histoire & récit</h2><textarea value={activeEntity.history || ''} onChange={e => updateEntity(activeEntity.id,{history:e.target.value})} placeholder="Passé, événements fondateurs, blessures, secrets…"/>
+              <label className="character-block-label">Objectif dans l’histoire<textarea value={activeEntity.goal || ''} onChange={e => updateEntity(activeEntity.id,{goal:e.target.value})} placeholder="Que cherche ce personnage ? Qu’est-ce qui l’en empêche ?"/></label>
+              <h2>Relations</h2><p className="character-help">Chaque lien peut avoir deux perceptions différentes : ce personnage peut considérer l’autre comme un ami, sans que ce soit réciproque.</p>
+              <button className="primary-button" onClick={() => addCharacterRelation(activeEntity)}><Plus size={15}/> Ajouter une relation</button>
+              <div className="character-relations">{entityRelations.map(r => { const outgoing = r.fromEntityId === activeEntity.id; const other = entities.find(e => e.id === (outgoing ? r.toEntityId : r.fromEntityId)); return <article className="relation-card" key={r.id}><div><strong>{other?.name || 'Personnage inconnu'}</strong><span>{outgoing ? r.fromLabel : r.toLabel} · {outgoing ? r.toLabel : r.fromLabel}</span>{r.description && <p>{r.description}</p>}</div><button className="text-action" onClick={() => deleteRelation(r.id)}>Supprimer</button></article> })}{entityRelations.length === 0 && <p className="empty-hint">Aucune relation définie pour le moment.</p>}</div>
+              <h2>Notes personnelles</h2><textarea value={activeEntity.notes || activeEntity.description || ''} onChange={e => updateEntity(activeEntity.id,{notes:e.target.value,description:e.target.value})} placeholder="Tout ce que vous souhaitez garder en mémoire…"/>
+              <div className="custom-fields-heading"><h2>Champs personnalisés</h2><button className="text-action" onClick={() => addCustomField(activeEntity)}><Plus size={14}/> Ajouter un champ</button></div>
+              {(activeEntity.customFields || []).map(field => <label className="custom-field" key={field.id}><span>{field.label}</span><input value={field.value} onChange={e => updateEntity(activeEntity.id,{customFields:(activeEntity.customFields || []).map(f => f.id === field.id ? {...f,value:e.target.value} : f)})}/><button className="text-action" onClick={() => updateEntity(activeEntity.id,{customFields:(activeEntity.customFields || []).filter(f => f.id !== field.id)})}>Retirer</button></label>)}
+            </div>
+          </>}
+        </div>}
         {view === 'notes' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">CAPTURER L’ÉTINCELLE</span><h1>Carnet d’idées</h1><p>Fragments, inspirations, scènes à venir et pensées à ne pas laisser filer.</p><button className="primary-button" onClick={createNote}><Plus size={16}/> Nouvelle idée</button></div><div className="notes-list">{notes.map(n => <article className="note-card" key={n.id}><div><h3>{n.title}</h3><p>{n.content || 'Note encore vide. Cliquez pour la développer.'}</p></div><button className="text-action" onClick={() => editNote(n)}>Ouvrir</button></article>)}{notes.length === 0 && <p className="empty-hint">Aucune idée notée pour le moment.</p>}</div></div>}
         {view === 'progress' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">MESURER LE CHEMIN PARCOURU</span><h1>Progression</h1><p>Un aperçu de la matière déjà écrite dans ce projet.</p></div><div className="progress-grid"><div className="progress-card"><span>MOTS ÉCRITS</span><strong>{wordCount.toLocaleString('fr-FR')}</strong></div><div className="progress-card"><span>CHAPITRES</span><strong>{projectDocuments.length}</strong></div><div className="progress-card"><span>FICHES D’UNIVERS</span><strong>{entities.length}</strong></div><div className="progress-card"><span>IDÉES CONSERVÉES</span><strong>{notes.length}</strong></div></div><div className="project-summary-card"><label>VOTRE AVANCEMENT</label><p>{wordCount === 0 ? 'La page est encore blanche. Chaque grande histoire commence quelque part.' : wordCount < 1000 ? 'Les premières pages prennent forme. Continuez à faire grandir votre histoire.' : 'Votre univers prend de l’ampleur. Votre travail est conservé localement.'}</p></div></div>}
         {view === 'settings' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">UN ATELIER À VOTRE MESURE</span><h1>Modules & préférences</h1><p>Activez uniquement les outils dont vous avez besoin. Vos données restent conservées même si vous masquez un module.</p></div><div className="settings-list">{Object.entries(moduleLabels).map(([key,label]) => <label className="setting-row" key={key}><div><strong>{label}</strong><span>{({manuscripts:'Écriture, chapitres et scènes',encyclopedia:'Personnages, lieux et éléments du monde',notes:'Idées, fragments et inspirations',progress:'Statistiques de votre projet'} as Record<string,string>)[key]}</span></div><input type="checkbox" checked={workspace.modules[key] !== false} onChange={e => toggleModule(key,e.target.checked)}/></label>)}</div></div>}
