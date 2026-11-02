@@ -14,7 +14,7 @@ if (!window.scriptorium) {
     const initial: ScriptoriumWorkspace = {
       version: 2,
       projects: [{ id: 'project-default', title: 'Mon premier projet', summary: 'Votre espace de création littéraire.', createdAt: now, updatedAt: now }],
-      documents: [], entities: [], notes: [],
+      documents: [], entities: [], notes: [], relations: [],
       modules: { manuscripts: true, encyclopedia: true, notes: true, progress: true }
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(initial))
@@ -51,6 +51,7 @@ if (!window.scriptorium) {
           documents: imported.documents.map((doc: ScriptoriumDocument) => ({ ...doc, projectId: doc.projectId || (imported.projects?.[0]?.id ?? 'project-default') })),
           entities: Array.isArray(imported.entities) ? imported.entities : [],
           notes: Array.isArray(imported.notes) ? imported.notes : [],
+          relations: Array.isArray(imported.relations) ? imported.relations : [],
           modules: { manuscripts: true, encyclopedia: true, notes: true, progress: true, ...(imported.modules || {}) }
         }
         await save(workspace)
