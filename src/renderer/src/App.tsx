@@ -14,6 +14,9 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [dirty, setDirty] = useState(false)
   const [fontFamily, setFontFamily] = useState('Georgia')
+  const [fontSize, setFontSize] = useState(15)
+  const [lineSpacing, setLineSpacing] = useState('2')
+  const [pageMargin, setPageMargin] = useState('comfortable')
   const activeDocument = documents.find((document) => document.id === activeId) ?? null
 
   const editor = useEditor({
@@ -40,6 +43,14 @@ export default function App() {
     const nextFont = activeDocument.fontFamily || 'Georgia'
     setFontFamily(nextFont)
     editor.view.dom.style.fontFamily = nextFont
+    const nextSize = activeDocument.fontSize || 15
+    const nextSpacing = activeDocument.lineSpacing || '2'
+    const nextMargin = activeDocument.pageMargin || 'comfortable'
+    setFontSize(nextSize)
+    setLineSpacing(nextSpacing)
+    setPageMargin(nextMargin)
+    editor.view.dom.style.fontSize = `${nextSize}px`
+    editor.view.dom.style.lineHeight = nextSpacing
   }, [activeId, editor])
 
   useEffect(() => {
@@ -81,6 +92,22 @@ export default function App() {
     editor.view.dom.style.fontFamily = nextFont
     const updated = await window.scriptorium.saveDocument({ ...activeDocument, fontFamily: nextFont })
     setDocuments((items) => items.map((item) => item.id === updated.id ? updated : item))
+  }
+
+  async function changePageSetting(setting: 'fontSize' | 'lineSpacing' | 'pageMargin', value: string) {
+    if (!activeDocument || !editor) return
+    const updated = { ...activeDocument, [setting]: setting === 'fontSize' ? Number(value) : value }
+    if (setting === 'fontSize') {
+      setFontSize(Number(value))
+      editor.view.dom.style.fontSize = `${value}px`
+    }
+    if (setting === 'lineSpacing') {
+      setLineSpacing(value)
+      editor.view.dom.style.lineHeight = value
+    }
+    if (setting === 'pageMargin') setPageMargin(value)
+    const saved = await window.scriptorium.saveDocument(updated)
+    setDocuments((items) => items.map((item) => item.id === saved.id ? saved : item))
   }
 
   async function renameDocument(title: string) {
@@ -155,10 +182,22 @@ export default function App() {
               <option value="Trebuchet MS">Trebuchet</option>
               <option value="Courier New">Courier New</option>
             </select>
+            <label className="font-picker-label" htmlFor="size-picker">Taille</label>
+            <select id="size-picker" className="compact-picker" value={fontSize} onChange={(event) => changePageSetting('fontSize', event.target.value)} disabled={!activeDocument}>
+              {[11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32].map((size) => <option key={size} value={size}>{size}</option>)}
+            </select>
+            <label className="font-picker-label" htmlFor="spacing-picker">Interligne</label>
+            <select id="spacing-picker" className="compact-picker" value={lineSpacing} onChange={(event) => changePageSetting('lineSpacing', event.target.value)} disabled={!activeDocument}>
+              <option value="1.3">Serré</option><option value="1.5">1,5</option><option value="1.8">Aéré</option><option value="2">Double</option>
+            </select>
+            <label className="font-picker-label" htmlFor="margin-picker">Marges</label>
+            <select id="margin-picker" className="compact-picker" value={pageMargin} onChange={(event) => changePageSetting('pageMargin', event.target.value)} disabled={!activeDocument}>
+              <option value="narrow">Étroit</option><option value="comfortable">Normal</option><option value="wide">Large</option>
+            </select>
             <div className="toolbar-spacer"/>
             {activeDocument && <button className="icon-button danger" title="Supprimer le manuscrit" onClick={deleteDocument}><Trash2 size={16}/></button>}
           </div>
-          {activeDocument ? <div className="page-wrap">
+          {activeDocument ? <div className={`page-wrap margin-${pageMargin}`}>
             <input className="document-title" value={activeDocument.title} onChange={(event) => renameDocument(event.target.value)} aria-label="Titre du manuscrit"/>
             <div className="page-meta">MANUSCRIT <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div>
             <EditorContent editor={editor}/>
