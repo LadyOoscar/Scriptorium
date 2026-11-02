@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, PanelLeftClose, PanelLeftOpen, Printer, Library, Users, Lightbulb, ChartNoAxesColumn, Settings, Plus, ChevronRight, BookMarked } from 'lucide-react'
+import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, PanelLeftClose, PanelLeftOpen, Printer, Library, Users, Lightbulb, ChartNoAxesColumn, Settings, Plus, ChevronRight, BookMarked, X } from 'lucide-react'
 
 const blankContent = '<p></p>'
 const newId = () => crypto.randomUUID()
@@ -241,11 +241,11 @@ export default function App() {
     </header>
     <div className="workspace">
       {sidebarOpen && <aside className="sidebar">
-        <div className="sidebar-heading"><span>ESPACE DE TRAVAIL</span><button className="icon-button small" title="Nouveau projet" onClick={createProject}><Plus size={17}/></button></div>
+        <div className="sidebar-heading"><span>ESPACE DE TRAVAIL</span><div className="sidebar-heading-actions"><button className="icon-button small" title="Nouveau projet" onClick={createProject}><Plus size={17}/></button><button className="icon-button small mobile-sidebar-close" title="Fermer le menu" onClick={() => setSidebarOpen(false)}><X size={17}/></button></div></div>
         <div className="project-switcher"><label>PROJET ACTUEL</label><select value={activeProjectId || ''} onChange={e => { setActiveProjectId(e.target.value); setActiveDocumentId(null); setView('projects') }}>{workspace.projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></div>
-        <nav className="side-nav">{nav.filter(item => !item.module || workspace.modules[item.module] !== false).map(item => <button key={item.id} className={view === item.id ? 'nav-item active' : 'nav-item'} onClick={() => setView(item.id)}>{item.icon}<span>{item.label}</span><ChevronRight size={14}/></button>)}</nav>
+        <nav className="side-nav">{nav.filter(item => !item.module || workspace.modules[item.module] !== false).map(item => <button key={item.id} className={view === item.id ? 'nav-item active' : 'nav-item'} onClick={() => { setView(item.id); if (window.matchMedia('(max-width: 760px)').matches) setSidebarOpen(false) }}>{item.icon}<span>{item.label}</span><ChevronRight size={14}/></button>)}</nav>
         {view === 'manuscripts' && <><div className="sidebar-heading subheading"><span>CHAPITRES & SCÈNES</span><button className="icon-button small" title="Ajouter un chapitre" onClick={createChapter}><FilePlus2 size={16}/></button></div><div className="search-box"><Search size={15}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher"/></div><div className="document-list">{filteredDocuments.map(doc => <button key={doc.id} className={doc.id === activeDocumentId ? 'document-item active' : 'document-item'} onClick={() => setActiveDocumentId(doc.id)}><BookOpen size={15}/><span>{doc.title || 'Sans titre'}</span></button>)}{filteredDocuments.length === 0 && <p className="empty-list">Aucun chapitre pour le moment.</p>}</div></>}
-        <div className="sidebar-bottom"><button className="nav-item settings-link" onClick={() => setView('settings')}><Settings size={15}/><span>Modules & préférences</span></button><span className="local-note"><Archive size={13}/> Données conservées sur cet ordinateur</span></div>
+        <div className="sidebar-bottom"><button className="nav-item settings-link" onClick={() => { setView('settings'); if (window.matchMedia('(max-width: 760px)').matches) setSidebarOpen(false) }}><Settings size={15}/><span>Modules & préférences</span></button><span className="local-note"><Archive size={13}/> Données conservées sur cet ordinateur</span></div>
       </aside>}
       <section className="editor-area">
         <div className="editor-toolbar"><button className="icon-button" title="Afficher/masquer le panneau latéral" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <PanelLeftClose size={17}/> : <PanelLeftOpen size={17}/>}</button><div className="toolbar-divider"/>
