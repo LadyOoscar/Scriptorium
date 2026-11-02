@@ -6,6 +6,9 @@ type ScriptoriumDocument = {
   fontSize?: number
   lineSpacing?: string
   pageMargin?: string
+  pageFormat?: string
+  orientation?: string
+  pageNumbers?: boolean
   updatedAt: string
 }
 
