@@ -24,6 +24,7 @@ type ScriptoriumWorkspace = {
   entities: ScriptoriumEntity[]
   notes: ScriptoriumNote[]
   relations?: ScriptoriumRelation[]
+  graphPositions?: Record<string, { x: number; y: number }>
   modules: Record<string, boolean>
 }
 interface Window {
