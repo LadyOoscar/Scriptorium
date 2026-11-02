@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, Check, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, Check, PanelLeftClose, PanelLeftOpen, Printer } from 'lucide-react'
 
 const blankContent = '<p></p>'
 const newId = () => crypto.randomUUID()
@@ -17,6 +17,9 @@ export default function App() {
   const [fontSize, setFontSize] = useState(15)
   const [lineSpacing, setLineSpacing] = useState('2')
   const [pageMargin, setPageMargin] = useState('comfortable')
+  const [pageFormat, setPageFormat] = useState('A4')
+  const [orientation, setOrientation] = useState('portrait')
+  const [pageNumbers, setPageNumbers] = useState(true)
   const activeDocument = documents.find((document) => document.id === activeId) ?? null
 
   const editor = useEditor({
@@ -49,6 +52,9 @@ export default function App() {
     setFontSize(nextSize)
     setLineSpacing(nextSpacing)
     setPageMargin(nextMargin)
+    setPageFormat(activeDocument.pageFormat || 'A4')
+    setOrientation(activeDocument.orientation || 'portrait')
+    setPageNumbers(activeDocument.pageNumbers !== false)
     editor.view.dom.style.fontSize = `${nextSize}px`
     editor.view.dom.style.lineHeight = nextSpacing
   }, [activeId, editor])
@@ -94,7 +100,7 @@ export default function App() {
     setDocuments((items) => items.map((item) => item.id === updated.id ? updated : item))
   }
 
-  async function changePageSetting(setting: 'fontSize' | 'lineSpacing' | 'pageMargin', value: string) {
+  async function changePageSetting(setting: 'fontSize' | 'lineSpacing' | 'pageMargin' | 'pageFormat' | 'orientation' | 'pageNumbers', value: string) {
     if (!activeDocument || !editor) return
     const updated = { ...activeDocument, [setting]: setting === 'fontSize' ? Number(value) : value }
     if (setting === 'fontSize') {
@@ -106,6 +112,9 @@ export default function App() {
       editor.view.dom.style.lineHeight = value
     }
     if (setting === 'pageMargin') setPageMargin(value)
+    if (setting === 'pageFormat') setPageFormat(value)
+    if (setting === 'orientation') setOrientation(value)
+    if (setting === 'pageNumbers') setPageNumbers(value === 'true')
     const saved = await window.scriptorium.saveDocument(updated)
     setDocuments((items) => items.map((item) => item.id === saved.id ? saved : item))
   }
@@ -194,10 +203,17 @@ export default function App() {
             <select id="margin-picker" className="compact-picker" value={pageMargin} onChange={(event) => changePageSetting('pageMargin', event.target.value)} disabled={!activeDocument}>
               <option value="narrow">Étroit</option><option value="comfortable">Normal</option><option value="wide">Large</option>
             </select>
+            <label className="font-picker-label" htmlFor="format-picker">Format</label>
+            <select id="format-picker" className="compact-picker" value={pageFormat} onChange={(event) => changePageSetting('pageFormat', event.target.value)} disabled={!activeDocument}><option value="A4">A4</option><option value="A5">A5</option><option value="Letter">Lettre</option></select>
+            <label className="font-picker-label" htmlFor="orientation-picker">Sens</label>
+            <select id="orientation-picker" className="compact-picker" value={orientation} onChange={(event) => changePageSetting('orientation', event.target.value)} disabled={!activeDocument}><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select>
+            <label className="font-picker-label" htmlFor="numbers-picker">Pages</label>
+            <select id="numbers-picker" className="compact-picker" value={String(pageNumbers)} onChange={(event) => changePageSetting('pageNumbers', event.target.value)} disabled={!activeDocument}><option value="true">Numérotées</option><option value="false">Sans numéro</option></select>
+            <button className="icon-button" title="Imprimer le manuscrit" onClick={() => window.print()} disabled={!activeDocument}><Printer size={16}/></button>
             <div className="toolbar-spacer"/>
             {activeDocument && <button className="icon-button danger" title="Supprimer le manuscrit" onClick={deleteDocument}><Trash2 size={16}/></button>}
           </div>
-          {activeDocument ? <div className={`page-wrap margin-${pageMargin}`}>
+          {activeDocument ? <div className={`page-wrap margin-${pageMargin} format-${pageFormat.toLowerCase()} orientation-${orientation} ${pageNumbers ? 'with-page-numbers' : 'without-page-numbers'}`}>
             <input className="document-title" value={activeDocument.title} onChange={(event) => renameDocument(event.target.value)} aria-label="Titre du manuscrit"/>
             <div className="page-meta">MANUSCRIT <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div>
             <EditorContent editor={editor}/>
