@@ -8,7 +8,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "dist:win": "npm run build && electron-builder --win nsis"
+    "dist:win": "npm run build && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "@tiptap/extension-placeholder": "^3.0.9",
