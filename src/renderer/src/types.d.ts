@@ -13,7 +13,9 @@ type ScriptoriumDocument = {
   pageNumbers?: boolean
   updatedAt: string
 }
-type ScriptoriumEntity = { id: string; projectId: string; type: string; name: string; description: string; updatedAt: string }
+type ScriptoriumCustomField = { id: string; label: string; value: string }
+type ScriptoriumEntity = { id: string; projectId: string; type: string; name: string; description: string; age?: string; gender?: string; origin?: string; role?: string; appearance?: string; personality?: string; qualities?: string; flaws?: string; fears?: string; motivations?: string; history?: string; goal?: string; notes?: string; customFields?: ScriptoriumCustomField[]; updatedAt: string }
+type ScriptoriumRelation = { id: string; projectId: string; fromEntityId: string; toEntityId: string; fromLabel: string; toLabel: string; description: string }
 type ScriptoriumNote = { id: string; projectId: string; title: string; content: string; updatedAt: string }
 type ScriptoriumWorkspace = {
   version: number
@@ -21,6 +23,7 @@ type ScriptoriumWorkspace = {
   documents: ScriptoriumDocument[]
   entities: ScriptoriumEntity[]
   notes: ScriptoriumNote[]
+  relations?: ScriptoriumRelation[]
   modules: Record<string, boolean>
 }
 interface Window {
