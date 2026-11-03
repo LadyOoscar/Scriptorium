@@ -257,8 +257,9 @@ export default function App() {
   useEffect(() => {
     if (view !== 'genealogy' || !workspace || !activeProjectId) return
     const canvas = genealogyCanvasRef.current
+    const layer = genealogyInnerRef.current
     const svg = genealogySvgRef.current
-    if (!canvas || !svg) return
+    if (!canvas || !layer || !svg) return
     const people = workspace.entities.filter(e => e.projectId === activeProjectId && e.type === 'Personnage')
     const links = (workspace.genealogyLinks || []).filter(link => link.projectId === activeProjectId)
     const edges = links.map(link => {
@@ -274,22 +275,33 @@ export default function App() {
       return { link, kind, parental: ['parent de','enfant de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de','adoptant de','enfant adopté de'].includes(link.type.toLocaleLowerCase('fr')) }
     }).filter(edge => people.some(p => p.id === edge.link.fromEntityId) && people.some(p => p.id === edge.link.toEntityId))
     const draw = () => {
-      const width = Math.max(canvas.scrollWidth, canvas.clientWidth)
-      const height = Math.max(canvas.scrollHeight, canvas.clientHeight)
+      const zoom = Math.max(0.01, genealogyZoom)
+      const width = Math.max(layer.scrollWidth, layer.clientWidth)
+      const height = Math.max(layer.scrollHeight, layer.clientHeight)
       svg.setAttribute('width', String(width)); svg.setAttribute('height', String(height)); svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
-      const bounds = canvas.getBoundingClientRect()
+      const bounds = layer.getBoundingClientRect()
       const nodes = new Map<string, DOMRect>()
-      canvas.querySelectorAll<HTMLElement>('.genealogy-node[data-person-id]').forEach(node => { if (node.dataset.personId) nodes.set(node.dataset.personId, node.getBoundingClientRect()) })
+      canvas.querySelectorAll<HTMLElement>('.genealogy-node[data-person-id]').forEach(node => {
+        if (node.dataset.personId) {
+          const rect = node.getBoundingClientRect()
+          nodes.set(node.dataset.personId, new DOMRect(
+            (rect.left - bounds.left) / zoom,
+            (rect.top - bounds.top) / zoom,
+            rect.width / zoom,
+            rect.height / zoom
+          ))
+        }
+      })
       const ns = 'http://www.w3.org/2000/svg'
       const paths = edges.flatMap(edge => {
         const from = nodes.get(edge.link.fromEntityId), to = nodes.get(edge.link.toEntityId)
         if (!from || !to) return []
         const fromIsChild = ['enfant de','enfant adopté de'].includes(edge.link.type.toLocaleLowerCase('fr'))
         const vertical = edge.parental
-        const x1 = (vertical ? from.left + from.width / 2 : (fromIsChild ? from.left : from.right)) - bounds.left + canvas.scrollLeft
-        const y1 = (vertical ? (fromIsChild ? from.top : from.bottom) : from.top + from.height / 2) - bounds.top + canvas.scrollTop
-        const x2 = (vertical ? to.left + to.width / 2 : (fromIsChild ? to.right : to.left)) - bounds.left + canvas.scrollLeft
-        const y2 = (vertical ? (fromIsChild ? to.bottom : to.top) : to.top + to.height / 2) - bounds.top + canvas.scrollTop
+        const x1 = vertical ? from.left + from.width / 2 : (fromIsChild ? from.left : from.right)
+        const y1 = vertical ? (fromIsChild ? from.top : from.bottom) : from.top + from.height / 2
+        const x2 = vertical ? to.left + to.width / 2 : (fromIsChild ? to.right : to.left)
+        const y2 = vertical ? (fromIsChild ? to.bottom : to.top) : to.top + to.height / 2
         const ns = 'http://www.w3.org/2000/svg'
         const path = document.createElementNS(ns, 'path')
         if (vertical) {
@@ -312,7 +324,7 @@ export default function App() {
     canvas.querySelectorAll('.genealogy-node').forEach(node => observer.observe(node))
     window.addEventListener('resize', draw); canvas.addEventListener('scroll', draw)
     return () => { observer.disconnect(); window.removeEventListener('resize', draw); canvas.removeEventListener('scroll', draw) }
-  }, [view, activeProjectId, workspace, genealogyOffsets])
+  }, [view, activeProjectId, workspace, genealogyOffsets, genealogyZoom])
 
   if (!workspace) return <main className="loading-screen"><Feather size={28}/><span>Ouverture de votre atelier…</span></main>
   const entities = workspace.entities.filter(e => e.projectId === activeProjectId)
