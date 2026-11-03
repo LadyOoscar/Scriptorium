@@ -408,3 +408,10 @@
 .genealogy-zoom-layer{position:relative;transform-origin:top left}
 .genealogy-zoom-layer>.genealogy-connectors{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
 @media(max-width:760px){.genealogy-canvas{max-height:68vh;min-height:320px}.genealogy-zoom-tools{width:100%;justify-content:space-between}.genealogy-zoom-tools input{flex:1;min-width:65px}}
+
+
+/* Actions discrètes sur les fiches de l'arbre */
+.genealogy-node-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;width:100%;margin-top:7px}
+.genealogy-node-actions button{padding:4px 8px;border:1px solid #e5d5bd;border-radius:7px;background:#fffaf1;color:#806746;font:inherit;font-size:10px;cursor:pointer}
+.genealogy-node-actions button:hover{border-color:#b89568;background:#f8eddd}
+.genealogy-zoom-tools button:disabled{opacity:.4;cursor:not-allowed}
