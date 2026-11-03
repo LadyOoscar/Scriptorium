@@ -318,3 +318,19 @@
  .genealogy-branch-list{justify-content:flex-start;gap:18px 14px;padding:20px 8px 26px}
  .genealogy-branch{flex:0 0 185px;min-width:185px}
 }
+
+/* Traits SVG de filiation, placés derrière les fiches */
+.genealogy-canvas{position:relative}
+.genealogy-connectors{
+ position:absolute;left:0;top:0;z-index:0;overflow:visible;pointer-events:none;
+}
+.genealogy-connectors path{
+ fill:none;stroke:#a98a61;stroke-width:2.2;stroke-linecap:round;
+ filter:drop-shadow(0 1px 1px #fff8);
+}
+.genealogy-connectors path.adoptive{
+ stroke:#9b83b2;stroke-width:2;stroke-dasharray:6 5;
+}
+.genealogy-generation{position:relative;z-index:1}
+.genealogy-generation-people{position:relative;z-index:2}
+.genealogy-node{position:relative;z-index:3}
