@@ -509,3 +509,12 @@
   .proofreading-suggestions-panel>div{padding:12px 0!important}
   .proofreading-suggestions-panel button{min-height:40px;touch-action:manipulation}
 }
+
+
+/* Remonter le panneau de suggestions au-dessus des commandes Android */
+@media(max-width:760px){
+  .proofreading-suggestions-panel{
+    bottom:calc(76px + env(safe-area-inset-bottom))!important;
+    max-height:58dvh!important;
+  }
+}
