@@ -189,3 +189,10 @@
 .genealogy-branch small{margin-top:3px;font-size:9px;letter-spacing:.12em;color:#987c5a}
 .genealogy-branch.adoptive{border-style:dashed;border-color:#9b8bb0;background:#f7f3fa}
 .genealogy-branch.adoptive .genealogy-branch-joint{border-color:#a99ab9;background:#eee7f4;color:#78628f}
+
+
+.genealogy-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.genealogy-actions .secondary-button{padding:10px 14px;border:1px solid #d8c6ad;border-radius:9px;background:#fbf7ef;color:#765f43;font:inherit;font-size:13px;cursor:pointer}
+.genealogy-hint{margin:10px 0 0;color:#927e65;font-size:12px}
+.genealogy-node{touch-action:none;cursor:grab;user-select:none;position:relative;z-index:1;will-change:transform}
+.genealogy-node:active{cursor:grabbing;z-index:3;box-shadow:0 9px 24px #59432925}
