@@ -355,6 +355,23 @@ export default function App() {
     printWindow.document.close()
   }
 
+  async function autoFormatForPrint() {
+    if (!activeDocument || !editor) return
+    await applyLayoutMode('submission')
+    setLayoutMode('submission')
+    setFontFamily('Times New Roman')
+    setFontSize(12)
+    setLineSpacing('2')
+    setPageMargin('wide')
+    setPageFormat('A4')
+    setOrientation('portrait')
+    setPageNumbers(true)
+    editor.view.dom.style.fontFamily = '"Times New Roman", Times, serif'
+    editor.view.dom.style.fontSize = '12pt'
+    editor.view.dom.style.lineHeight = '2'
+    window.alert('Mise en page standard appliquée à ce chapitre. Ton texte et sa structure n’ont pas été réécrits. Tu peux maintenant ouvrir l’aperçu avant impression.')
+  }
+
   async function selectPublisherProfile(profile: string) {
     setPublisherProfile(profile)
     if (!workspace || !activeDocument) return
@@ -724,7 +741,7 @@ export default function App() {
       <section className="editor-area">
         <div className="editor-toolbar"><button className="icon-button" title="Afficher/masquer le panneau latéral" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <PanelLeftClose size={17}/> : <PanelLeftOpen size={17}/>}</button><div className="toolbar-divider"/>
           {view === 'manuscripts' && activeDocument && <><button className="icon-button" title="Gras" onClick={() => editor?.chain().focus().toggleBold().run()}><Bold size={17}/></button><button className="icon-button" title="Italique" onClick={() => editor?.chain().focus().toggleItalic().run()}><Italic size={17}/></button><button className="icon-button" title="Titre" onClick={() => editor?.chain().focus().toggleHeading({level:2}).run()}><Heading2 size={17}/></button><button className="icon-button" title="Liste" onClick={() => editor?.chain().focus().toggleBulletList().run()}><List size={17}/></button><button className="icon-button" title="Citation" onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote size={17}/></button><button className={showWritingTools ? "icon-button active" : "icon-button"} title="Outils d’écriture" onClick={() => setShowWritingTools(value => !value)}><ChartNoAxesColumn size={17}/></button><div className="toolbar-divider"/>
-            <select className="compact-picker layout-mode-picker" aria-label="Mode de mise en page" value={layoutMode} onChange={e => applyLayoutMode(e.target.value)}><option value="writing">Écriture</option><option value="submission">Soumission éditeur</option><option value="novel">Rendu roman</option></select>
+            <select className="compact-picker layout-mode-picker" aria-label="Mode de mise en page" value={layoutMode} onChange={e => applyLayoutMode(e.target.value)}><option value="writing">Écriture</option><option value="submission">Soumission éditeur</option><option value="novel">Rendu roman</option></select><button className="auto-format-button" title="Appliquer une mise en page standard prête pour l’impression" onClick={autoFormatForPrint}><Printer size={14}/> Mise en page auto</button>
             {layoutMode === 'submission' && <select className="compact-picker publisher-picker" aria-label="Profil éditeur" value={publisherProfile} onChange={e => selectPublisherProfile(e.target.value)}><option value="standard">Standard personnalisable</option><option value="saxus">Saxus</option><option value="bragelonne">Bragelonne</option><option value="calix">Calix</option></select>}
             <select className="font-picker" value={fontFamily} onChange={e => changeSetting('fontFamily', e.target.value)}><option>Georgia</option><option>Palatino Linotype</option><option>Garamond</option><option>Book Antiqua</option><option>Cambria</option><option>Times New Roman</option><option>Arial</option><option>Calibri</option><option>Verdana</option><option>Trebuchet MS</option><option>Courier New</option></select>
             <select className="compact-picker" value={fontSize} onChange={e => changeSetting('fontSize', e.target.value)}>{[11,12,13,14,15,16,18,20,22,24,28,32].map(s => <option key={s}>{s}</option>)}</select>
