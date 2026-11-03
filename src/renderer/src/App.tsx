@@ -208,21 +208,33 @@ export default function App() {
     const people = entities.filter(e => e.type === 'Personnage')
     if (people.length < 2) { window.alert('Créez au moins deux fiches de personnages pour établir une généalogie.'); return }
     const choices = people.map((e, i) => (i + 1) + '. ' + e.name).join('\\n')
-    const from = window.prompt('Personnage de départ (numéro) :\\n' + choices)
+    const from = window.prompt('Personnage qui décrit le lien (numéro) :\\n' + choices)
     if (from === null) return
-    const parent = people[Number(from) - 1]
-    if (!parent) return
-    const to = window.prompt('Personnage lié à ' + parent.name + ' (numéro) :\\n' + choices)
+    const source = people[Number(from) - 1]
+    if (!source) return
+    const to = window.prompt('Personnage lié à ' + source.name + ' (numéro) :\\n' + choices)
     if (to === null) return
-    const child = people[Number(to) - 1]
-    if (!child || child.id === parent.id) return
-    const types = ['Parent de', 'Enfant de', 'Frère / sœur de', 'Demi-frère / demi-sœur de', 'Adoptant de', 'Enfant adopté de', 'Union avec', 'Lien personnalisé']
-    const typeChoice = window.prompt('Type de lien :\\n' + types.map((t, i) => (i + 1) + '. ' + t).join('\\n'), '1')
-    if (typeChoice === null) return
-    const type = types[Number(typeChoice) - 1]
-    if (!type) return
+    const target = people[Number(to) - 1]
+    if (!target || target.id === source.id) return
+    const rawType = window.prompt('Quel lien les unit ? Écris librement : « grand p », « mère », « cousin », « conjoint », « enfant adopté »…', 'parent')
+    if (rawType === null || !rawType.trim()) return
+    const normalized = rawType.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[’']/g, ' ').replace(/[^a-z ]/g, ' ').replace(/\\s+/g, ' ').trim()
+    const patterns: [RegExp, string][] = [
+      [/^(grand|grd) ?p(ere)?$/, 'Grand-père de'], [/^(grand|grd) ?m(ere)?$/, 'Grand-mère de'],
+      [/^(arriere grand|arriere grd) ?p(ere)?$/, 'Arrière-grand-père de'], [/^(arriere grand|arriere grd) ?m(ere)?$/, 'Arrière-grand-mère de'],
+      [/^(pere|papa|mere|maman)$/, 'Parent de'], [/^(fils|fille|enfant)$/, 'Enfant de'],
+      [/^(fils|fille) adopte(e)?$/, 'Enfant adopté de'], [/^(frere|soeur|sibling)$/, 'Frère / sœur de'],
+      [/^(demi frere|demi soeur)$/, 'Demi-frère / demi-sœur de'],
+      [/^(conjoint|conjointe|epoux|epouse|partenaire|mari|femme)$/, 'Union avec'],
+      [/^(oncle|tante)$/, 'Oncle / tante de'], [/^(neveu|niece)$/, 'Neveu / nièce de'],
+      [/^(cousin|cousine)$/, 'Cousin / cousine de'], [/^(beau pere|belle mere|beau parent)$/, 'Beau-parent de'],
+      [/^(adoptant|parent adoptif)$/, 'Adoptant de']
+    ]
+    const matched = patterns.find(([pattern]) => pattern.test(normalized))
+    const type = matched?.[1] || (rawType.trim().endsWith('de') ? rawType.trim() : rawType.trim() + ' de')
+    if (!window.confirm((matched ? 'Lien reconnu : ' : 'Lien personnalisé : ') + type + '\\n\\n' + source.name + ' → ' + target.name + '\\n\\nCréer ce lien ?')) return
     const description = window.prompt('Précisions (facultatif)', '') ?? ''
-    await save({ ...workspace, genealogyLinks: [...(workspace.genealogyLinks || []), { id: newId(), projectId: activeProject.id, fromEntityId: parent.id, toEntityId: child.id, type, description }] })
+    await save({ ...workspace, genealogyLinks: [...(workspace.genealogyLinks || []), { id: newId(), projectId: activeProject.id, fromEntityId: source.id, toEntityId: target.id, type, description }] })
   }
   async function deleteGenealogyLink(linkId: string) {
     if (!workspace || !window.confirm('Supprimer ce lien familial ?')) return
@@ -300,7 +312,7 @@ export default function App() {
   const genealogyPeople = entities.filter(entity => entity.type === 'Personnage')
   const parentEdges = genealogyLinks.flatMap(link => {
     const type = link.type.toLocaleLowerCase('fr')
-    if (type === 'parent de' || type === 'adoptant de') return [{ parent: link.fromEntityId, child: link.toEntityId, link }]
+    if (type === 'parent de' || type === 'adoptant de' || type === 'grand-père de' || type === 'grand-mère de' || type === 'arrière-grand-père de' || type === 'arrière-grand-mère de') return [{ parent: link.fromEntityId, child: link.toEntityId, link }]
     if (type === 'enfant de' || type === 'enfant adopté de') return [{ parent: link.toEntityId, child: link.fromEntityId, link }]
     return []
   }).filter(edge => genealogyPeople.some(p => p.id === edge.parent) && genealogyPeople.some(p => p.id === edge.child))
