@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, PanelLeftClose, PanelLeftOpen, Printer, Library, Users, Lightbulb, ChartNoAxesColumn, Settings, Plus, ChevronRight, BookMarked, X } from 'lucide-react'
+import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, PanelLeftClose, PanelLeftOpen, Printer, Library, Users, Lightbulb, ChartNoAxesColumn, Settings, Plus, ChevronRight, BookMarked, X, CalendarDays, GitBranch } from 'lucide-react'
 
 const blankContent = '<p></p>'
 const newId = () => crypto.randomUUID()
@@ -169,6 +169,47 @@ export default function App() {
     if (!workspace || !window.confirm('Supprimer cette relation ?')) return
     await save({ ...workspace, relations: (workspace.relations || []).filter(r => r.id !== relationId) })
   }
+  async function createTimelineEvent() {
+    if (!workspace || !activeProject) return
+    const title = window.prompt('Nom de l’événement')
+    if (!title?.trim()) return
+    const date = window.prompt('Date ou repère chronologique (ex. -1200, An 45, Printemps 302)', '')
+    if (date === null || !date.trim()) return
+    const period = window.prompt('Période (facultatif)', '') ?? ''
+    const category = window.prompt('Catégorie / couleur thématique', 'Histoire') ?? 'Histoire'
+    const description = window.prompt('Description de l’événement', '') ?? ''
+    const event = { id: newId(), projectId: activeProject.id, title: title.trim(), date: date.trim(), period, category, description }
+    await save({ ...workspace, timelineEvents: [...(workspace.timelineEvents || []), event] })
+  }
+  async function deleteTimelineEvent(eventId: string) {
+    if (!workspace || !window.confirm('Supprimer cet événement de la frise ?')) return
+    await save({ ...workspace, timelineEvents: (workspace.timelineEvents || []).filter(e => e.id !== eventId) })
+  }
+  async function addGenealogyLink() {
+    if (!workspace || !activeProject) return
+    const people = entities.filter(e => e.type === 'Personnage')
+    if (people.length < 2) { window.alert('Créez au moins deux fiches de personnages pour établir une généalogie.'); return }
+    const choices = people.map((e, i) => (i + 1) + '. ' + e.name).join('\\n')
+    const from = window.prompt('Personnage de départ (numéro) :\\n' + choices)
+    if (from === null) return
+    const parent = people[Number(from) - 1]
+    if (!parent) return
+    const to = window.prompt('Personnage lié à ' + parent.name + ' (numéro) :\\n' + choices)
+    if (to === null) return
+    const child = people[Number(to) - 1]
+    if (!child || child.id === parent.id) return
+    const types = ['Parent de', 'Enfant de', 'Frère / sœur de', 'Demi-frère / demi-sœur de', 'Adoptant de', 'Enfant adopté de', 'Union avec', 'Lien personnalisé']
+    const typeChoice = window.prompt('Type de lien :\\n' + types.map((t, i) => (i + 1) + '. ' + t).join('\\n'), '1')
+    if (typeChoice === null) return
+    const type = types[Number(typeChoice) - 1]
+    if (!type) return
+    const description = window.prompt('Précisions (facultatif)', '') ?? ''
+    await save({ ...workspace, genealogyLinks: [...(workspace.genealogyLinks || []), { id: newId(), projectId: activeProject.id, fromEntityId: parent.id, toEntityId: child.id, type, description }] })
+  }
+  async function deleteGenealogyLink(linkId: string) {
+    if (!workspace || !window.confirm('Supprimer ce lien familial ?')) return
+    await save({ ...workspace, genealogyLinks: (workspace.genealogyLinks || []).filter(link => link.id !== linkId) })
+  }
   async function createNote() {
     if (!workspace || !activeProject) return
     const title = window.prompt('Titre de votre idée', 'Nouvelle idée')
@@ -237,7 +278,7 @@ export default function App() {
   }
   const notes = workspace.notes.filter(n => n.projectId === activeProjectId)
   const wordCount = projectDocuments.reduce((sum, doc) => sum + ((doc.content.replace(/<[^>]*>/g, ' ').match(/[\p{L}\p{N}’'-]+/gu) || []).length), 0)
-  const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }]
+  const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }, { id: 'timeline', label: 'Frise chronologique', icon: <CalendarDays size={16}/> }, { id: 'genealogy', label: 'Arbre généalogique', icon: <GitBranch size={16}/> }]
 
   return <main className="app-shell">
     <header className="topbar">
@@ -304,6 +345,8 @@ export default function App() {
             </div>
           </>}
         </div>}
+        {view === 'timeline' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">MÉMOIRE DE VOTRE UNIVERS</span><h1>Frise chronologique</h1><p>Les grands tournants, les petites tragédies et les événements qui façonnent votre monde.</p><button className="primary-button" onClick={createTimelineEvent}><Plus size={16}/> Ajouter un événement</button></div><div className="timeline-track">{(workspace.timelineEvents || []).filter(e => e.projectId === activeProjectId).slice().sort((a,b) => a.date.localeCompare(b.date, 'fr', { numeric: true })).map(event => <article className="timeline-event" key={event.id}><div className="timeline-marker"/><div className="timeline-event-card"><span className="card-kicker">{event.category} · {event.period || 'Chronologie'}</span><h3>{event.title}</h3><strong>{event.date}</strong>{event.description && <p>{event.description}</p>}<button className="text-action" onClick={() => deleteTimelineEvent(event.id)}>Supprimer</button></div></article>)}{!(workspace.timelineEvents || []).some(e => e.projectId === activeProjectId) && <p className="empty-hint">Votre chronologie est encore vierge. Ajoutez le premier événement fondateur.</p>}</div></div>}
+        {view === 'genealogy' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">HÉRITAGES & DESCENDANCES</span><h1>Arbre généalogique</h1><p>Cartographiez les lignées, les unions, les adoptions et les liens de parenté de vos personnages.</p><button className="primary-button" onClick={addGenealogyLink}><Plus size={16}/> Ajouter un lien familial</button></div><div className="genealogy-tree">{(workspace.genealogyLinks || []).filter(link => link.projectId === activeProjectId).map(link => { const from = entities.find(e => e.id === link.fromEntityId); const to = entities.find(e => e.id === link.toEntityId); return <article className="genealogy-link-card" key={link.id}><div className="genealogy-person"><span>✦</span><strong>{from?.name || 'Personnage inconnu'}</strong></div><div className="genealogy-connector"><span>{link.type}</span><i/></div><div className="genealogy-person"><span>✦</span><strong>{to?.name || 'Personnage inconnu'}</strong></div>{link.description && <p>{link.description}</p>}<button className="text-action" onClick={() => deleteGenealogyLink(link.id)}>Retirer ce lien</button></article> })}{!(workspace.genealogyLinks || []).some(link => link.projectId === activeProjectId) && <p className="empty-hint">Aucun lien familial pour le moment. Créez des fiches Personnage puis reliez-les ici.</p>}</div></div>}
         {view === 'notes' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">CAPTURER L’ÉTINCELLE</span><h1>Carnet d’idées</h1><p>Fragments, inspirations, scènes à venir et pensées à ne pas laisser filer.</p><button className="primary-button" onClick={createNote}><Plus size={16}/> Nouvelle idée</button></div><div className="notes-list">{notes.map(n => <article className="note-card" key={n.id}><div><h3>{n.title}</h3><p>{n.content || 'Note encore vide. Cliquez pour la développer.'}</p></div><button className="text-action" onClick={() => editNote(n)}>Ouvrir</button></article>)}{notes.length === 0 && <p className="empty-hint">Aucune idée notée pour le moment.</p>}</div></div>}
         {view === 'progress' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">MESURER LE CHEMIN PARCOURU</span><h1>Progression</h1><p>Un aperçu de la matière déjà écrite dans ce projet.</p></div><div className="progress-grid"><div className="progress-card"><span>MOTS ÉCRITS</span><strong>{wordCount.toLocaleString('fr-FR')}</strong></div><div className="progress-card"><span>CHAPITRES</span><strong>{projectDocuments.length}</strong></div><div className="progress-card"><span>FICHES D’UNIVERS</span><strong>{entities.length}</strong></div><div className="progress-card"><span>IDÉES CONSERVÉES</span><strong>{notes.length}</strong></div></div><div className="project-summary-card"><label>VOTRE AVANCEMENT</label><p>{wordCount === 0 ? 'La page est encore blanche. Chaque grande histoire commence quelque part.' : wordCount < 1000 ? 'Les premières pages prennent forme. Continuez à faire grandir votre histoire.' : 'Votre univers prend de l’ampleur. Votre travail est conservé localement.'}</p></div></div>}
         {view === 'settings' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">UN ATELIER À VOTRE MESURE</span><h1>Modules & préférences</h1><p>Activez uniquement les outils dont vous avez besoin. Vos données restent conservées même si vous masquez un module.</p></div><div className="settings-list">{Object.entries(moduleLabels).map(([key,label]) => <label className="setting-row" key={key}><div><strong>{label}</strong><span>{({manuscripts:'Écriture, chapitres et scènes',encyclopedia:'Personnages, lieux et éléments du monde',notes:'Idées, fragments et inspirations',progress:'Statistiques de votre projet'} as Record<string,string>)[key]}</span></div><input type="checkbox" checked={workspace.modules[key] !== false} onChange={e => toggleModule(key,e.target.checked)}/></label>)}</div></div>}
