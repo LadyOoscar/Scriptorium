@@ -319,18 +319,37 @@
  .genealogy-branch{flex:0 0 185px;min-width:185px}
 }
 
-/* Traits SVG de filiation, placés derrière les fiches */
+/* Connecteurs distincts pour chaque famille de relations */
 .genealogy-canvas{position:relative}
 .genealogy-connectors{
  position:absolute;left:0;top:0;z-index:0;overflow:visible;pointer-events:none;
 }
 .genealogy-connectors path{
- fill:none;stroke:#a98a61;stroke-width:2.2;stroke-linecap:round;
+ fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
  filter:drop-shadow(0 1px 1px #fff8);
 }
-.genealogy-connectors path.adoptive{
- stroke:#9b83b2;stroke-width:2;stroke-dasharray:6 5;
+.genealogy-connectors .relation-biological{stroke:#a98a61}
+.genealogy-connectors .relation-adoptive{stroke:#9675b7;stroke-width:2.5;stroke-dasharray:7 5}
+.genealogy-connectors .relation-sibling{stroke:#438f86;stroke-dasharray:2 5;stroke-width:3}
+.genealogy-connectors .relation-half-sibling{stroke:#5686b5;stroke-dasharray:10 4 2 4}
+.genealogy-connectors .relation-union{stroke:#c16d91;stroke-width:3.2;stroke-dasharray:12 3}
+.genealogy-connectors .relation-extended{stroke:#77945c;stroke-dasharray:3 4 11 4}
+.genealogy-connectors .relation-step{stroke:#c18a48;stroke-dasharray:8 3 2 3}
+.genealogy-connectors .relation-custom{stroke:#89858d;stroke-dasharray:2 4 8 4}
+.genealogy-legend{
+ display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+ margin:0 0 16px;padding:10px 13px;border:1px solid #e8dfd2;border-radius:12px;
+ background:#fffdf8;color:#716657;font-size:11px
 }
+.genealogy-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.relation-sample{display:inline-block;width:25px;height:0;border-top:2.5px solid #a98a61}
+.relation-sample.adoptive{border-color:#9675b7;border-top-style:dashed}
+.relation-sample.sibling{border-color:#438f86;border-top-style:dotted;border-top-width:3px}
+.relation-sample.half-sibling{border-color:#5686b5;border-top-style:dashed}
+.relation-sample.union{border-color:#c16d91;border-top-width:3px;border-top-style:double}
+.relation-sample.extended{border-color:#77945c;border-top-style:dotted}
+.relation-sample.step{border-color:#c18a48;border-top-style:dashed}
+.relation-sample.custom{border-color:#89858d;border-top-style:dashed}
 .genealogy-generation{position:relative;z-index:1}
 .genealogy-generation-people{position:relative;z-index:2}
 .genealogy-node{position:relative;z-index:3}
