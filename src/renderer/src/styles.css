@@ -196,3 +196,20 @@
 .genealogy-hint{margin:10px 0 0;color:#927e65;font-size:12px}
 .genealogy-node{touch-action:none;cursor:grab;user-select:none;position:relative;z-index:1;will-change:transform}
 .genealogy-node:active{cursor:grabbing;z-index:3;box-shadow:0 9px 24px #59432925}
+
+
+.genealogy-modal-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px;background:#241d16a8;backdrop-filter:blur(4px)}
+.genealogy-modal{position:relative;width:min(100%,480px);max-height:min(90dvh,760px);overflow:auto;padding:28px;border:1px solid #ddcbb1;border-radius:18px;background:linear-gradient(155deg,#fffdf8,#f3eadc);box-shadow:0 24px 80px #1b140d55;color:#4b3c2b}
+.genealogy-modal h2{margin:5px 0 22px;font-family:Georgia,serif;font-size:27px;font-weight:500}
+.genealogy-modal-close{position:absolute;right:17px;top:17px;border:0;background:transparent;color:#806b50;cursor:pointer}
+.genealogy-modal>label{display:flex;flex-direction:column;gap:7px;margin:14px 0;color:#705a40;font-size:12px;font-weight:650}
+.genealogy-modal input,.genealogy-modal select,.genealogy-modal textarea{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #d8c7af;border-radius:9px;background:#fffefa;color:#453929;font:inherit;font-size:14px;outline:none}
+.genealogy-modal input:focus,.genealogy-modal select:focus,.genealogy-modal textarea:focus{border-color:#a8875e;box-shadow:0 0 0 3px #b99a7020}
+.genealogy-modal label small{font-size:11px;font-weight:400;color:#927e65}
+.genealogy-suggestions{margin:-2px 0 13px;padding:11px 13px;border:1px solid #dfcfb8;border-radius:10px;background:#f8f1e7}
+.genealogy-suggestions>span{display:block;margin-bottom:6px;color:#9a7b53;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.genealogy-suggestions button{width:100%;padding:9px 10px;border:1px solid #d4bd9c;border-radius:8px;background:#fffaf1;color:#604a31;text-align:left;font:inherit;font-size:13px;cursor:pointer}
+.genealogy-suggestions p{margin:0;color:#88745c;font-size:12px}
+.genealogy-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:22px}
+.genealogy-modal-actions button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:520px){.genealogy-modal{padding:23px 18px}.genealogy-modal-actions{flex-direction:column-reverse}.genealogy-modal-actions button{width:100%}}
