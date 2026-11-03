@@ -422,3 +422,17 @@
 .genealogy-node-dates{color:#9a8468!important;font-size:9px!important;letter-spacing:.02em}
 
 .portrait-upload-field{display:flex;flex-direction:column;gap:12px}.portrait-upload-field>label{display:flex;flex-direction:column;gap:7px}.portrait-upload-preview{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #e6d9c7;border-radius:12px;background:#fbf7f0}.portrait-upload-preview img{width:76px;height:76px;object-fit:cover;border-radius:10px}
+
+
+/* Correcteur automatique de manuscrit */
+.ProseMirror .scriptorium-proofread-error {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #c34d4d;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.ProseMirror .scriptorium-proofread-error:hover {
+  background: rgba(195, 77, 77, .09);
+}
