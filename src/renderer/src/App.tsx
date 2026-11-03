@@ -258,12 +258,18 @@ export default function App() {
     if (!canvas || !svg) return
     const people = workspace.entities.filter(e => e.projectId === activeProjectId && e.type === 'Personnage')
     const links = (workspace.genealogyLinks || []).filter(link => link.projectId === activeProjectId)
-    const edges = links.flatMap(link => {
-      const type = link.type.toLocaleLowerCase('fr')
-      if (['parent de','adoptant de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de'].includes(type)) return [{ parent: link.fromEntityId, child: link.toEntityId, link }]
-      if (['enfant de','enfant adopté de'].includes(type)) return [{ parent: link.toEntityId, child: link.fromEntityId, link }]
-      return []
-    }).filter(edge => people.some(p => p.id === edge.parent) && people.some(p => p.id === edge.child))
+    const edges = links.map(link => {
+      const type = link.type.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+      let kind = 'custom'
+      if (type.includes('adopt')) kind = 'adoptive'
+      else if (type.includes('demi-frere') || type.includes('demi-frere') || type.includes('demi-soeur')) kind = 'half-sibling'
+      else if (type.includes('frere') || type.includes('soeur')) kind = 'sibling'
+      else if (type.includes('union') || type.includes('conjoint') || type.includes('epoux') || type.includes('epouse') || type.includes('partenaire') || type.includes('mari')) kind = 'union'
+      else if (type.includes('oncle') || type.includes('tante') || type.includes('neveu') || type.includes('niece') || type.includes('cousin')) kind = 'extended'
+      else if (type.includes('beau-parent') || type.includes('beau parent') || type.includes('beau-pere') || type.includes('belle mere')) kind = 'step'
+      else if (type.includes('parent') || type.includes('enfant') || type.includes('grand-')) kind = 'biological'
+      return { link, kind, parental: ['parent de','enfant de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de','adoptant de','enfant adopté de'].includes(link.type.toLocaleLowerCase('fr')) }
+    }).filter(edge => people.some(p => p.id === edge.link.fromEntityId) && people.some(p => p.id === edge.link.toEntityId))
     const draw = () => {
       const width = Math.max(canvas.scrollWidth, canvas.clientWidth)
       const height = Math.max(canvas.scrollHeight, canvas.clientHeight)
@@ -273,16 +279,26 @@ export default function App() {
       canvas.querySelectorAll<HTMLElement>('.genealogy-node[data-person-id]').forEach(node => { if (node.dataset.personId) nodes.set(node.dataset.personId, node.getBoundingClientRect()) })
       const ns = 'http://www.w3.org/2000/svg'
       const paths = edges.flatMap(edge => {
-        const parent = nodes.get(edge.parent), child = nodes.get(edge.child)
-        if (!parent || !child) return []
-        const x1 = parent.left + parent.width / 2 - bounds.left + canvas.scrollLeft
-        const y1 = parent.bottom - bounds.top + canvas.scrollTop
-        const x2 = child.left + child.width / 2 - bounds.left + canvas.scrollLeft
-        const y2 = child.top - bounds.top + canvas.scrollTop
-        const mid = y1 + Math.max(24, (y2 - y1) / 2)
+        const from = nodes.get(edge.link.fromEntityId), to = nodes.get(edge.link.toEntityId)
+        if (!from || !to) return []
+        const fromIsChild = ['enfant de','enfant adopté de'].includes(edge.link.type.toLocaleLowerCase('fr'))
+        const vertical = edge.parental
+        const x1 = (vertical ? from.left + from.width / 2 : (fromIsChild ? from.left : from.right)) - bounds.left + canvas.scrollLeft
+        const y1 = (vertical ? (fromIsChild ? from.top : from.bottom) : from.top + from.height / 2) - bounds.top + canvas.scrollTop
+        const x2 = (vertical ? to.left + to.width / 2 : (fromIsChild ? to.right : to.left)) - bounds.left + canvas.scrollLeft
+        const y2 = (vertical ? (fromIsChild ? to.bottom : to.top) : to.top + to.height / 2) - bounds.top + canvas.scrollTop
+        const ns = 'http://www.w3.org/2000/svg'
         const path = document.createElementNS(ns, 'path')
-        path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`)
-        path.setAttribute('class', edge.link.type.toLocaleLowerCase('fr').includes('adopt') ? 'adoptive' : 'biological')
+        if (vertical) {
+          const mid = y1 + (y2 - y1) / 2
+          path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`)
+        } else {
+          const mid = x1 + (x2 - x1) / 2
+          path.setAttribute('d', `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`)
+        }
+        path.setAttribute('class', `relation-${edge.kind}`)
+        path.setAttribute('data-relation', edge.link.type)
+        path.setAttribute('aria-label', edge.link.type)
         return [path]
       })
       svg.replaceChildren(...paths)
