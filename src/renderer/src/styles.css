@@ -74,3 +74,59 @@
   .sidebar-heading-actions { gap: 6px; }
   .mobile-sidebar-close { width: 38px; height: 38px; }
 }
+
+
+/* Confort d'utilisation : clavier mobile, petites largeurs et zones tactiles */
+@media (max-width: 760px) {
+  .content-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(34px + env(safe-area-inset-bottom));
+  }
+  .editor-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .editor-toolbar .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+  .page-wrap {
+    min-height: 100%;
+    padding-bottom: calc(34px + env(safe-area-inset-bottom));
+  }
+  .writing-surface {
+    overflow-wrap: anywhere;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .character-panel input,
+  .character-panel textarea,
+  .document-title {
+    font-size: 16px;
+  }
+  .character-panel .primary-button,
+  .character-list-actions .primary-button,
+  .character-list-actions .secondary-button,
+  .relation-card .text-action {
+    min-height: 42px;
+  }
+  .relation-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .relationship-map {
+    overscroll-behavior: contain;
+  }
+}
+@media (max-width: 390px) {
+  .topbar { padding-inline: 8px; }
+  .brand { gap: 7px; }
+  .brand > span { font-size: 16px; }
+  .topbar-right .icon-button { width: 38px; height: 38px; }
+  .content-scroll { padding-inline: 14px; }
+  .character-panel { padding: 13px; }
+  .relationship-map-section { padding: 10px; }
+}
