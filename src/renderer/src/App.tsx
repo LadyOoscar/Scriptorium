@@ -71,6 +71,7 @@ export default function App() {
   const [localSpellBusy, setLocalSpellBusy] = useState(false)
   const [localSpellChecked, setLocalSpellChecked] = useState(false)
   const [localAutoProofread, setLocalAutoProofread] = useState(true)
+  const localSpellTimer = useRef<number | null>(null)
   const activeProject = workspace?.projects.find(p => p.id === activeProjectId) ?? null
   const projectDocuments = workspace?.documents.filter(d => d.projectId === activeProjectId) ?? []
   const activeDocument = projectDocuments.find(d => d.id === activeDocumentId) ?? null
@@ -79,7 +80,13 @@ export default function App() {
     extensions: [StarterKit, Placeholder.configure({ placeholder: 'Écrire…' }), ProofreadDecorations],
     content: blankContent,
     editorProps: { attributes: { class: 'writing-surface', spellcheck: 'true' } },
-    onUpdate: () => setDirty(true)
+    onUpdate: () => {
+      setDirty(true)
+      if (localAutoProofread) {
+        if (localSpellTimer.current !== null) window.clearTimeout(localSpellTimer.current)
+        localSpellTimer.current = window.setTimeout(() => { void checkLocally() }, 900)
+      }
+    }
   })
 
   useEffect(() => {
@@ -144,20 +151,7 @@ export default function App() {
     window.setTimeout(() => { void checkLocally() }, 80)
   }
 
-  useEffect(() => {
-    if (!editor || !activeDocument || !localAutoProofread) return
-    let timer: number | undefined
-    const scheduleCheck = () => {
-      if (timer) window.clearTimeout(timer)
-      timer = window.setTimeout(() => { void checkLocally() }, 1100)
-    }
-    scheduleCheck()
-    editor.on('update', scheduleCheck)
-    return () => {
-      if (timer) window.clearTimeout(timer)
-      editor.off('update', scheduleCheck)
-    }
-  }, [editor, activeDocumentId, localAutoProofread])
+  useEffect(() => () => { if (localSpellTimer.current !== null) window.clearTimeout(localSpellTimer.current) }, [])
   async function checkWithLanguageTool() {
     if (!editor) return
     const selection = editor.state.selection
