@@ -27,6 +27,7 @@ type ScriptoriumWorkspace = {
   timelineEvents?: { id: string; projectId: string; title: string; date: string; period?: string; category: string; description: string; color?: string; entityIds?: string[] }[]
   genealogyLinks?: { id: string; projectId: string; fromEntityId: string; toEntityId: string; type: string; description?: string }[]
   graphPositions?: Record<string, { x: number; y: number }>
+  genealogyPositions?: Record<string, { x: number; y: number }>
   modules: Record<string, boolean>
 }
 interface Window {
