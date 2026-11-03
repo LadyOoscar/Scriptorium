@@ -320,8 +320,8 @@ export default function App() {
   const getGeneration = (id: string, trail: string[] = []): number => {
     if (generationById[id] !== undefined) return generationById[id]
     if (trail.includes(id)) return 0
-    const parents = parentEdges.filter(edge => edge.child === id).map(edge => edge.parent)
-    const level = parents.length ? Math.min(8, Math.max(...parents.map(parent => getGeneration(parent, [...trail, id]) + 1))) : 0
+    const parents = parentEdges.filter(edge => edge.child === id)
+    const level = parents.length ? Math.min(8, Math.max(...parents.map(edge => getGeneration(edge.parent, [...trail, id]) + (/arrière-grand/.test(edge.link.type.toLocaleLowerCase('fr')) ? 3 : /grand-/.test(edge.link.type.toLocaleLowerCase('fr')) ? 2 : 1)))) : 0
     generationById[id] = level
     return level
   }
@@ -350,7 +350,7 @@ export default function App() {
     const offset = genealogyOffsets[id]
     if (offset) await save({ ...workspace, genealogyPositions: { ...(workspace.genealogyPositions || {}), [id]: offset } })
   }
-  const otherGenealogyLinks = genealogyLinks.filter(link => !['parent de','enfant de','adoptant de','enfant adopté de'].includes(link.type.toLocaleLowerCase('fr')))
+  const otherGenealogyLinks = genealogyLinks.filter(link => !['parent de','enfant de','adoptant de','enfant adopté de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de'].includes(link.type.toLocaleLowerCase('fr')))
   const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }, { id: 'timeline', label: 'Frise chronologique', icon: <CalendarDays size={16}/> }, { id: 'genealogy', label: 'Arbre généalogique', icon: <GitBranch size={16}/> }]
 
   return <main className="app-shell">
