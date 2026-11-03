@@ -155,6 +155,36 @@ export default function App() {
     const next = { ...workspace, entities: workspace.entities.map(e => e.id === entityId ? { ...e, ...patch, updatedAt: new Date().toISOString() } : e) }
     await save(next)
   }
+  async function uploadPortrait(entityId: string, file?: File) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { window.alert('Choisissez un fichier image.'); return }
+    if (file.size > 15 * 1024 * 1024) { window.alert('Cette image dépasse 15 Mo. Choisissez un fichier plus léger.'); return }
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Lecture impossible'))
+        reader.onerror = () => reject(new Error('Lecture impossible'))
+        reader.readAsDataURL(file)
+      })
+      const image: HTMLImageElement = await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => reject(new Error('Image illisible'))
+        img.src = dataUrl
+      })
+      const scale = Math.min(1, 640 / Math.max(image.naturalWidth, image.naturalHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('Traitement image indisponible')
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      const compressed = canvas.toDataURL('image/jpeg', 0.78)
+      await updateEntity(entityId, { portraitUrl: compressed })
+    } catch {
+      window.alert('Impossible de charger ce portrait. Essayez une autre image.')
+    }
+  }
   async function addCustomField(entity: ScriptoriumEntity) {
     const label = window.prompt('Nom du nouveau champ')
     if (!label?.trim()) return
@@ -484,7 +514,11 @@ export default function App() {
             <div className="module-heading"><button className="text-action" onClick={() => setActiveEntityId(null)}>← Retour aux personnages</button><span className="eyebrow">FICHE · {activeEntity.type.toLocaleUpperCase('fr')}</span><input className="character-name-input" value={activeEntity.name} onChange={e => updateEntity(activeEntity.id,{name:e.target.value})} aria-label="Nom du personnage"/><p>Les champs sont facultatifs. Complétez uniquement ce qui vous est utile.</p></div>
             <div className="character-panel">
               <h2>Portrait & repères de vie</h2><div className="character-form-grid">
-                <label className="wide-field">Portrait (URL de l’image)<input value={activeEntity.portraitUrl || ''} onChange={e => updateEntity(activeEntity.id,{portraitUrl:e.target.value})} placeholder="https://…"/></label>
+                <div className="wide-field portrait-upload-field">
+                  <label>Importer un portrait depuis l’appareil<input type="file" accept="image/*" onChange={e => { const file = e.target.files?.[0]; void uploadPortrait(activeEntity.id, file); e.currentTarget.value = '' }}/></label>
+                  {activeEntity.portraitUrl && <div className="portrait-upload-preview"><img src={activeEntity.portraitUrl} alt={`Portrait de ${activeEntity.name}`}/><button type="button" className="text-action" onClick={() => updateEntity(activeEntity.id,{portraitUrl:''})}>Retirer le portrait</button></div>}
+                  <label>Ou utiliser une URL d’image<input value={activeEntity.portraitUrl?.startsWith('data:') ? '' : activeEntity.portraitUrl || ''} onChange={e => updateEntity(activeEntity.id,{portraitUrl:e.target.value})} placeholder="https://…"/></label>
+                </div>
                 <label>Naissance<input value={activeEntity.birthDate || ''} onChange={e => updateEntity(activeEntity.id,{birthDate:e.target.value})} placeholder="Date ou année (calendrier libre)"/></label>
                 <label>Décès<input value={activeEntity.deathDate || ''} onChange={e => updateEntity(activeEntity.id,{deathDate:e.target.value})} placeholder="Date, année ou vivant·e"/></label>
               </div>
