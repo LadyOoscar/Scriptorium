@@ -1,5 +1,4 @@
 import nspell from 'nspell'
-import frenchDictionary from 'dictionary-fr'
 
 export type LocalSpellingIssue = {
   word: string
@@ -9,20 +8,26 @@ export type LocalSpellingIssue = {
 }
 
 let spellEngine: ReturnType<typeof nspell> | null = null
+let loading: Promise<ReturnType<typeof nspell>> | null = null
 
-function getSpellEngine() {
-  if (!spellEngine) {
-    const aff = new TextDecoder().decode(frenchDictionary.aff as unknown as Uint8Array)
-    const dic = new TextDecoder().decode(frenchDictionary.dic as unknown as Uint8Array)
-    spellEngine = nspell(aff, dic)
+async function getSpellEngine() {
+  if (spellEngine) return spellEngine
+  if (!loading) {
+    loading = Promise.all([
+      fetch('/fr.aff').then(response => { if (!response.ok) throw new Error('Dictionnaire français indisponible'); return response.text() }),
+      fetch('/fr.dic').then(response => { if (!response.ok) throw new Error('Dictionnaire français indisponible'); return response.text() })
+    ]).then(([aff, dic]) => {
+      spellEngine = nspell(aff, dic)
+      return spellEngine
+    })
   }
-  return spellEngine
+  return loading
 }
 
 export async function checkFrenchSpelling(doc: {
   descendants: (callback: (node: { isText?: boolean; text?: string }, position: number) => boolean | void) => void
 }): Promise<LocalSpellingIssue[]> {
-  const spell = getSpellEngine()
+  const spell = await getSpellEngine()
   const issues: LocalSpellingIssue[] = []
   doc.descendants((node, position) => {
     if (!node.isText || !node.text) return
