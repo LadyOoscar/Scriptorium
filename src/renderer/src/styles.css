@@ -130,3 +130,22 @@
   .character-panel { padding: 13px; }
   .relationship-map-section { padding: 10px; }
 }
+
+
+/* Chronologie et généalogie : papeterie d'archive */
+.timeline-track{position:relative;max-width:900px;margin:34px auto 70px;padding:4px 0 4px 34px}
+.timeline-track:before{content:"";position:absolute;left:11px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#b58b58,#d9c7a9 70%,transparent)}
+.timeline-event{position:relative;margin:0 0 22px}
+.timeline-marker{position:absolute;left:-29px;top:22px;width:13px;height:13px;border:3px solid #f7f1e7;border-radius:50%;background:#9a7047;box-shadow:0 0 0 1px #b58b58}
+.timeline-event-card,.genealogy-link-card{background:linear-gradient(145deg,#fffdf8,#f4ecdf);border:1px solid #e3d5c1;border-radius:13px;padding:19px 21px;box-shadow:0 7px 22px #5e47200d}
+.timeline-event-card h3{margin:8px 0 5px;color:#423629;font-family:Georgia,serif;font-size:20px}
+.timeline-event-card>strong{color:#936e47;font-size:13px;letter-spacing:.04em}
+.timeline-event-card p,.genealogy-link-card p{color:#756b5e;line-height:1.65}
+.timeline-event-card .text-action,.genealogy-link-card .text-action{margin-top:7px}
+.genealogy-tree{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:30px 0 70px}
+.genealogy-link-card{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px}
+.genealogy-person{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:8px 15px;width:min(100%,260px);border:1px solid #ddc9aa;border-radius:10px;background:#fffcf5;color:#4a3d2d}
+.genealogy-person>span{color:#a27b4f}
+.genealogy-connector{display:flex;flex-direction:column;align-items:center;gap:5px;color:#98744e;font-size:12px;font-variant:small-caps;letter-spacing:.06em}
+.genealogy-connector i{display:block;width:1px;height:18px;background:#b99a70}
+@media(max-width:760px){.timeline-track{padding-left:28px;margin-top:24px}.timeline-marker{left:-23px}.timeline-event-card,.genealogy-link-card{padding:15px}.genealogy-tree{grid-template-columns:1fr}}
