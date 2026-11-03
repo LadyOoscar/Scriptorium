@@ -31,7 +31,7 @@ if (!window.scriptorium) {
     anchor.href = url
     anchor.download = 'scriptorium-sauvegarde.json'
     anchor.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500)
     return true
   }
   const importBackup = async () => new Promise<boolean>((resolve) => {
