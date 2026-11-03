@@ -20,7 +20,7 @@ const ProofreadDecorations = Extension.create({
           return next ? next : decorations.map(tr.mapping, tr.doc)
         }
       },
-      props: { decorations(state) { return this.getState(state) } }
+      props: { decorations(state) { return proofreadKey.getState(state) } }
     })]
   }
 })
