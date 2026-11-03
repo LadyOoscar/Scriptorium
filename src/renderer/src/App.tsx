@@ -316,7 +316,8 @@ export default function App() {
   const cyclicPeople = new Set(genealogyPeople.filter(person => isInParentCycle(person.id)).map(person => person.id))
   const getGeneration = (id: string, trail: Set<string> = new Set()): number => {
     if (generationById[id] !== undefined) return generationById[id]
-    if (cyclicPeople.has(id) || trail.has(id)) return 0
+    if (cyclicPeople.has(id)) { generationById[id] = 0; return 0 }
+    if (trail.has(id)) return 0
     const nextTrail = new Set(trail)
     nextTrail.add(id)
     const parents = parentEdges.filter(edge => edge.child === id)
