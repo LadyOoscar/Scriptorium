@@ -307,6 +307,54 @@ export default function App() {
     await save({ ...workspace, documents: workspace.documents.map(d => d.id === updated.id ? updated : d) })
   }
 
+  async function prepareProjectForPrint() {
+    if (!workspace || !activeProject) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) { window.alert('Autorise les fenêtres contextuelles pour préparer ton manuscrit.'); return }
+    const docs = projectDocuments.map(doc => ({
+      ...doc,
+      content: doc.id === activeDocumentId && editor ? editor.getHTML() : doc.content
+    })).filter(doc => doc.content && doc.content.replace(/<[^>]*>/g, '').trim())
+    if (docs.length === 0) { printWindow.close(); window.alert('Ce projet ne contient aucun texte à imprimer.'); return }
+    const updatedDocs = workspace.documents.map(doc => {
+      const current = docs.find(item => item.id === doc.id)
+      return current ? { ...doc, content: current.content, layoutMode: 'novel', fontFamily: 'Garamond', fontSize: 12, lineSpacing: '1.5', pageMargin: 'comfortable', pageFormat: 'A5', orientation: 'portrait', pageNumbers: true } : doc
+    })
+    await window.scriptorium.saveWorkspace({ ...workspace, documents: updatedDocs })
+    setWorkspace({ ...workspace, documents: updatedDocs })
+    setDirty(false)
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char] || char))
+    const chapters = docs.map((doc, index) => `<section class="chapter"><h1>${escapeHtml(doc.title || 'Chapitre ' + (index + 1))}</h1>${doc.content}</section>`).join('')
+    const contents = docs.map((doc, index) => `<li>${escapeHtml(doc.title || 'Chapitre ' + (index + 1))}</li>`).join('')
+    printWindow.document.open()
+    printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(activeProject.title)} · prêt à imprimer</title><style>
+      @page{size:A5;margin:19mm 17mm 20mm 20mm}
+      *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#211f1b}
+      body{font-family:Garamond,"Book Antiqua",serif;font-size:11.5pt;line-height:1.42}
+      .title-page{height:165mm;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always}
+      .title-page h1{font-size:28pt;font-weight:normal;letter-spacing:.04em;margin:0 0 16mm}
+      .title-page p{font-size:12pt;color:#555}
+      .contents{page-break-after:always;padding-top:12mm}.contents h1{text-align:center;font-size:18pt;font-weight:normal;margin-bottom:15mm}
+      .contents ol{padding-left:8mm}.contents li{margin:0 0 5mm;font-size:12pt}
+      .chapter{page-break-before:always;break-before:page}
+      .chapter h1{text-align:center;font-size:18pt;font-weight:normal;line-height:1.3;margin:0 0 18mm;page-break-after:avoid}
+      .chapter p{margin:0;text-indent:1.1em;text-align:justify;orphans:2;widows:2}
+      .chapter h1+p,.chapter h2+p,.chapter blockquote+p,.chapter ul+p{ text-indent:0 }
+      .chapter h2{text-align:center;font-size:14pt;font-weight:normal;margin:12mm 0 7mm;page-break-after:avoid}
+      .chapter blockquote{margin:6mm 8mm;font-style:italic}
+      .chapter ul,.chapter ol{padding-left:8mm}
+      img{max-width:100%;height:auto}
+      @media screen{body{max-width:148mm;margin:18px auto;padding:18mm 17mm 20mm 20mm;box-shadow:0 2px 20px #0002}.title-page,.contents,.chapter{min-height:180mm}}
+      @media print{.chapter{page-break-before:always;break-before:page}}
+    </style></head><body>
+      <section class="title-page"><h1>${escapeHtml(activeProject.title)}</h1><p>Manuscrit</p></section>
+      <section class="contents"><h1>Sommaire</h1><ol>${contents}</ol></section>
+      ${chapters}
+      <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),450))<\/script>
+    </body></html>`)
+    printWindow.document.close()
+  }
+
   async function selectPublisherProfile(profile: string) {
     setPublisherProfile(profile)
     if (!workspace || !activeDocument) return
@@ -684,7 +732,7 @@ export default function App() {
             <select className="compact-picker" value={pageMargin} onChange={e => changeSetting('pageMargin', e.target.value)}><option value="narrow">Étroit</option><option value="comfortable">Normal</option><option value="wide">Large</option></select>
             <select className="compact-picker" value={pageFormat} onChange={e => changeSetting('pageFormat', e.target.value)}><option>A4</option><option>A5</option><option>Letter</option></select>
             <select className="compact-picker" value={orientation} onChange={e => changeSetting('orientation', e.target.value)}><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select>
-            <select className="compact-picker" value={String(pageNumbers)} onChange={e => changeSetting('pageNumbers', e.target.value)}><option value="true">Numéros oui</option><option value="false">Numéros non</option></select><button className="icon-button" title="Imprimer" onClick={() => window.print()}><Printer size={16}/></button><div className="toolbar-spacer"/><button className="icon-button danger" title="Supprimer le chapitre" onClick={deleteDocument}><Trash2 size={16}/></button></>}
+            <select className="compact-picker" value={String(pageNumbers)} onChange={e => changeSetting('pageNumbers', e.target.value)}><option value="true">Numéros oui</option><option value="false">Numéros non</option></select><button className="primary-button print-project-button" title="Assembler et préparer tous les chapitres du projet" onClick={prepareProjectForPrint}><Printer size={15}/> Préparer pour impression</button><button className="icon-button" title="Imprimer le chapitre actuel" onClick={() => window.print()}><Printer size={16}/></button><div className="toolbar-spacer"/><button className="icon-button danger" title="Supprimer le chapitre" onClick={deleteDocument}><Trash2 size={16}/></button></>}
         </div>
         {view === 'projects' && <div className="content-scroll"><div className="welcome-panel"><h1>{activeProject?.title || 'Vos projets littéraires'}</h1></div>
           {activeProject && <div className="project-summary-card"><label>PRÉSENTATION DU PROJET</label><input className="project-title-input" value={activeProject.title} onChange={e => updateProject('title', e.target.value)}/><textarea value={activeProject.summary} onChange={e => updateProject('summary', e.target.value)} placeholder="Résumé, intention, ambiance de votre œuvre…"/><div className="project-stats"><span><BookOpen size={15}/> {projectDocuments.length} chapitre(s)</span><span><Users size={15}/> {entities.length} fiche(s)</span><span><Lightbulb size={15}/> {notes.length} idée(s)</span><span><BookMarked size={15}/> {wordCount.toLocaleString('fr-FR')} mots</span></div></div>}
