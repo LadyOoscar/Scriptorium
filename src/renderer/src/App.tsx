@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Extension } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Archive, BookOpen, FilePlus2, Feather, FolderOpen, Search, Trash2, Download, Upload, Bold, Italic, Heading2, List, Quote, PanelLeftClose, PanelLeftOpen, Printer, Library, Users, Lightbulb, ChartNoAxesColumn, Settings, Plus, ChevronRight, BookMarked, X, CalendarDays, GitBranch } from 'lucide-react'
+
+const proofreadKey = new PluginKey('scriptoriumProofread')
+const ProofreadDecorations = Extension.create({
+  name: 'proofreadDecorations',
+  addProseMirrorPlugins() {
+    return [new Plugin({
+      key: proofreadKey,
+      state: {
+        init: () => DecorationSet.empty,
+        apply(tr, decorations) {
+          const next = tr.getMeta(proofreadKey)
+          return next ? next : decorations.map(tr.mapping, tr.doc)
+        }
+      },
+      props: { decorations(state) { return this.getState(state) } }
+    })]
+  }
+})
 
 const blankContent = '<p></p>'
 const newId = () => crypto.randomUUID()
@@ -43,12 +64,14 @@ export default function App() {
   const [languageToolBusy, setLanguageToolBusy] = useState(false)
   const [languageToolIssues, setLanguageToolIssues] = useState<Array<{ message: string; context: string; offset: number; length: number; replacements: string[]; rule: string }>>([])
   const [languageToolError, setLanguageToolError] = useState('')
+  const [autoProofread, setAutoProofread] = useState(false)
+  const [languageToolChecked, setLanguageToolChecked] = useState(false)
   const activeProject = workspace?.projects.find(p => p.id === activeProjectId) ?? null
   const projectDocuments = workspace?.documents.filter(d => d.projectId === activeProjectId) ?? []
   const activeDocument = projectDocuments.find(d => d.id === activeDocumentId) ?? null
 
   const editor = useEditor({
-    extensions: [StarterKit, Placeholder.configure({ placeholder: 'L’histoire commence ici…' })],
+    extensions: [StarterKit, Placeholder.configure({ placeholder: 'L’histoire commence ici…' }), ProofreadDecorations],
     content: blankContent,
     editorProps: { attributes: { class: 'writing-surface', spellcheck: 'true' } },
     onUpdate: () => setDirty(true)
@@ -125,6 +148,59 @@ export default function App() {
       setLanguageToolBusy(false)
     }
   }
+  async function runAutomaticProofread() {
+    if (!editor || !autoProofread) return
+    const textToCheck = editor.getText()
+    if (!textToCheck.trim() || textToCheck.length > 20000) return
+    try {
+      const body = new URLSearchParams({ text: textToCheck, language: 'fr', enabledOnly: 'false' })
+      const response = await fetch('https://api.languagetool.org/v2/check', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+      if (!response.ok) throw new Error('LanguageTool indisponible')
+      const data = await response.json()
+      const matches = (data.matches || []).map((match: any) => ({
+        message: match.message, context: match.context?.text || '', offset: match.offset,
+        length: match.length, replacements: (match.replacements || []).slice(0, 4).map((item: any) => item.value),
+        rule: match.rule?.description || match.rule?.id || 'Suggestion'
+      }))
+      setLanguageToolIssues(matches)
+      setLanguageToolChecked(true)
+      const decorations = matches.filter((m: any) => m.length > 0).map((m: any) =>
+        Decoration.inline(Math.max(1, m.offset + 1), Math.max(1, m.offset + m.length + 1), {
+          class: 'scriptorium-proofread-error',
+          title: m.message,
+          'data-proofread-offset': String(m.offset)
+        }, { inclusiveStart: false, inclusiveEnd: false })
+      ).filter((d: any) => d.from < editor.state.doc.content.size && d.to <= editor.state.doc.content.size)
+      editor.view.dispatch(editor.state.tr.setMeta(proofreadKey, DecorationSet.create(editor.state.doc, decorations)))
+      setLanguageToolError('')
+    } catch (error) {
+      setLanguageToolError(error instanceof Error ? error.message : 'Vérification automatique impossible.')
+    }
+  }
+
+  function enableAutomaticProofread() {
+    if (autoProofread) { setAutoProofread(false); editor?.view.dispatch(editor.state.tr.setMeta(proofreadKey, DecorationSet.empty)); return }
+    const accepted = window.confirm('Activer la correction automatique ? Après activation, le texte du chapitre sera envoyé à LanguageTool après une courte pause de frappe, pour détecter les erreurs. Le texte ne sera jamais modifié automatiquement. Maximum : 20 000 caractères. Confirmez-vous cet envoi automatique ?')
+    if (accepted) { setAutoProofread(true); setLanguageToolError('') }
+  }
+
+  useEffect(() => {
+    if (!editor || !autoProofread) return
+    let timer: number | undefined
+    let lastRun = 0
+    const handleUpdate = () => {
+      if (timer) window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const now = Date.now()
+        if (now - lastRun < 7000) return
+        lastRun = now
+        void runAutomaticProofread()
+      }, 1800)
+    }
+    editor.on('update', handleUpdate)
+    return () => { if (timer) window.clearTimeout(timer); editor.off('update', handleUpdate) }
+  }, [editor, autoProofread, activeDocumentId])
+
   async function createProject() {
     if (!workspace) return
     const title = window.prompt('Nom du nouveau projet', 'Nouveau roman')
@@ -544,7 +620,7 @@ export default function App() {
           <div className="section-heading"><div><span className="eyebrow">VOTRE BIBLIOTHÈQUE</span><h2>Projets littéraires</h2></div><button className="primary-button" onClick={createProject}><Plus size={16}/> Nouveau projet</button></div>
           <div className="project-grid">{workspace.projects.map(p => <button key={p.id} className={p.id === activeProjectId ? 'project-card selected' : 'project-card'} onClick={() => {setActiveProjectId(p.id);setActiveDocumentId(null)}}><div className="project-card-icon"><Feather size={19}/></div><strong>{p.title}</strong><span>{p.summary || 'Projet sans résumé'}</span><small>{workspace.documents.filter(d => d.projectId === p.id).length} chapitre(s)</small></button>)}</div>
         </div>}
-        {view === 'manuscripts' && <>{activeDocument ? <div className={`page-wrap margin-${pageMargin} format-${pageFormat.toLowerCase()} orientation-${orientation} ${pageNumbers ? 'with-page-numbers' : 'without-page-numbers'}`}><input className="document-title" value={activeDocument.title} onChange={e => renameDocument(e.target.value)} aria-label="Titre du chapitre"/><div className="page-meta">{activeProject?.title.toUpperCase()} <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div><EditorContent editor={editor}/>{showWritingTools && <section style={{ margin: '22px 0', padding: '18px', border: '1px solid var(--line, #ddd4c7)', borderRadius: '12px', background: 'var(--surface, #faf7f0)' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}><div><strong style={{ fontFamily: 'Georgia, serif', fontSize: '18px' }}>Bureau d’analyse</strong><p style={{ margin: '4px 0 12px', opacity: .7, fontSize: '13px' }}>Un aperçu de ton passage, sans modifier ton texte.</p></div><button className="text-action" onClick={() => setShowWritingTools(false)}>Fermer</button></div><div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>{[['Mots', writingWords.length],['Caractères', writingText.length],['Paragraphes', writingParagraphs],['Lecture', writingReadingMinutes + ' min']].map(([label,value]) => <div key={String(label)} style={{ padding: '10px 13px', borderRadius: '8px', background: 'rgba(150,120,85,.10)', minWidth: '90px' }}><small style={{ display: 'block', opacity: .65 }}>{label}</small><strong>{value}</strong></div>)}</div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '12px 0' }}><button className="primary-button" onClick={checkWithLanguageTool} disabled={languageToolBusy}>{languageToolBusy ? 'Vérification…' : 'Corriger avec LanguageTool'}</button><span style={{ alignSelf: 'center', fontSize: '12px', opacity: .65 }}>Sélection ou chapitre entier · envoi après confirmation</span></div>{languageToolError && <p role="alert" style={{ color: '#9b4545', fontSize: '13px' }}>{languageToolError}</p>}{languageToolIssues.length > 0 && <div style={{ margin: '12px 0', padding: '12px', borderRadius: '8px', background: 'rgba(150,120,85,.08)' }}><h3 style={{ fontSize: '15px', margin: '0 0 8px' }}>{languageToolIssues.length} suggestion(s) de correction</h3>{languageToolIssues.map((issue, index) => <div key={index} style={{ padding: '9px 0', borderTop: '1px solid var(--line, #ddd4c7)' }}><strong style={{ fontSize: '13px' }}>{issue.message}</strong><p style={{ margin: '4px 0', fontSize: '12px', opacity: .7 }}>{issue.context}</p>{issue.replacements.length > 0 && <p style={{ margin: 0, fontSize: '13px' }}>Suggestions : {issue.replacements.join(' · ')}</p>}<small style={{ opacity: .55 }}>{issue.rule}</small></div>)}</div>}{languageToolIssues.length === 0 && !languageToolBusy && !languageToolError ? null : null}<p style={{ margin: '8px 0', fontSize: '11px', opacity: .55 }}>Correction fournie par <a href="https://languagetool.org/fr" target="_blank" rel="noreferrer">LanguageTool</a>. Les suggestions ne modifient jamais automatiquement ton manuscrit. Voir la <a href="https://languagetool.org/legal/privacy" target="_blank" rel="noreferrer">politique de confidentialité</a>.</p><h3 style={{ fontSize: '15px', margin: '10px 0 6px' }}>Mots qui reviennent souvent</h3>{writingRepeatedWords.length ? <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.8 }}>{writingRepeatedWords.map(([word,count]) => <span key={word} style={{ display: 'inline-block', margin: '0 7px 5px 0', padding: '3px 8px', borderRadius: '20px', background: 'rgba(150,120,85,.12)' }}>{word} · {count}</span>)}</p> : <p style={{ margin: 0, opacity: .7, fontSize: '13px' }}>Aucune répétition marquée détectée (seuil : 4 occurrences).</p>}<p style={{ margin: '12px 0 0', opacity: .6, fontSize: '12px' }}>La détection est indicative : les répétitions peuvent être volontaires et utiles au rythme.</p></section>}<div className="page-footer"><span>Scriptorium</span><span>Écrivez à votre rythme.</span></div></div> : <div className="empty-module"><BookOpen size={32}/><h2>Le manuscrit attend ses mots.</h2><p>Créez un premier chapitre pour commencer à écrire.</p><button className="primary-button" onClick={createChapter}><FilePlus2 size={16}/> Créer un chapitre</button></div>}</>}
+        {view === 'manuscripts' && <>{activeDocument ? <div className={`page-wrap margin-${pageMargin} format-${pageFormat.toLowerCase()} orientation-${orientation} ${pageNumbers ? 'with-page-numbers' : 'without-page-numbers'}`}><input className="document-title" value={activeDocument.title} onChange={e => renameDocument(e.target.value)} aria-label="Titre du chapitre"/><div className="page-meta">{activeProject?.title.toUpperCase()} <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div><EditorContent editor={editor}/>{showWritingTools && <section style={{ margin: '22px 0', padding: '18px', border: '1px solid var(--line, #ddd4c7)', borderRadius: '12px', background: 'var(--surface, #faf7f0)' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}><div><strong style={{ fontFamily: 'Georgia, serif', fontSize: '18px' }}>Bureau d’analyse</strong><p style={{ margin: '4px 0 12px', opacity: .7, fontSize: '13px' }}>Un aperçu de ton passage, sans modifier ton texte.</p></div><button className="text-action" onClick={() => setShowWritingTools(false)}>Fermer</button></div><div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>{[['Mots', writingWords.length],['Caractères', writingText.length],['Paragraphes', writingParagraphs],['Lecture', writingReadingMinutes + ' min']].map(([label,value]) => <div key={String(label)} style={{ padding: '10px 13px', borderRadius: '8px', background: 'rgba(150,120,85,.10)', minWidth: '90px' }}><small style={{ display: 'block', opacity: .65 }}>{label}</small><strong>{value}</strong></div>)}</div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '12px 0' }}><button className="primary-button" onClick={checkWithLanguageTool} disabled={languageToolBusy}>{languageToolBusy ? 'Vérification…' : 'Corriger avec LanguageTool'}</button><button className="secondary-button" onClick={enableAutomaticProofread}>{autoProofread ? 'Désactiver la correction automatique' : 'Activer la correction automatique'}</button><span style={{ alignSelf: 'center', fontSize: '12px', opacity: .65 }}>{autoProofread ? 'Correction active · analyse après la frappe' : 'Sélection ou chapitre entier · envoi après confirmation'}</span></div>{languageToolError && <p role="alert" style={{ color: '#9b4545', fontSize: '13px' }}>{languageToolError}</p>}{languageToolIssues.length > 0 && <div style={{ margin: '12px 0', padding: '12px', borderRadius: '8px', background: 'rgba(150,120,85,.08)' }}><h3 style={{ fontSize: '15px', margin: '0 0 8px' }}>{languageToolIssues.length} suggestion(s) de correction</h3>{languageToolIssues.map((issue, index) => <div key={index} style={{ padding: '9px 0', borderTop: '1px solid var(--line, #ddd4c7)' }}><strong style={{ fontSize: '13px' }}>{issue.message}</strong><p style={{ margin: '4px 0', fontSize: '12px', opacity: .7 }}>{issue.context}</p>{issue.replacements.length > 0 && <p style={{ margin: 0, fontSize: '13px' }}>Suggestions : {issue.replacements.join(' · ')}</p>}<small style={{ opacity: .55 }}>{issue.rule}</small></div>)}</div>}{languageToolChecked && languageToolIssues.length === 0 && !languageToolError && <p style={{ color: '#47724e', fontSize: '13px' }}>Aucune erreur détectée dans le dernier contrôle.</p>}<p style={{ margin: '8px 0', fontSize: '11px', opacity: .55 }}>Correction fournie par <a href="https://languagetool.org/fr" target="_blank" rel="noreferrer">LanguageTool</a>. Les suggestions ne modifient jamais automatiquement ton manuscrit. Voir la <a href="https://languagetool.org/legal/privacy" target="_blank" rel="noreferrer">politique de confidentialité</a>.</p><h3 style={{ fontSize: '15px', margin: '10px 0 6px' }}>Mots qui reviennent souvent</h3>{writingRepeatedWords.length ? <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.8 }}>{writingRepeatedWords.map(([word,count]) => <span key={word} style={{ display: 'inline-block', margin: '0 7px 5px 0', padding: '3px 8px', borderRadius: '20px', background: 'rgba(150,120,85,.12)' }}>{word} · {count}</span>)}</p> : <p style={{ margin: 0, opacity: .7, fontSize: '13px' }}>Aucune répétition marquée détectée (seuil : 4 occurrences).</p>}<p style={{ margin: '12px 0 0', opacity: .6, fontSize: '12px' }}>La détection est indicative : les répétitions peuvent être volontaires et utiles au rythme.</p></section>}<div className="page-footer"><span>Scriptorium</span><span>Écrivez à votre rythme.</span></div></div> : <div className="empty-module"><BookOpen size={32}/><h2>Le manuscrit attend ses mots.</h2><p>Créez un premier chapitre pour commencer à écrire.</p><button className="primary-button" onClick={createChapter}><FilePlus2 size={16}/> Créer un chapitre</button></div>}</>}
         {view === 'encyclopedia' && <div className="content-scroll">
           {!activeEntity ? <>
             <div className="module-heading"><span className="eyebrow">BÂTIR VOTRE UNIVERS</span><h1>Encyclopédie de votre univers</h1><p>Personnages, lieux, peuples, créatures, objets et événements : rassemblez toute la matière de votre monde et reliez ses éléments.</p><div className="character-list-actions"><button className="primary-button" onClick={createEntity}><Plus size={16}/> Nouvelle fiche</button><button className="secondary-button" onClick={() => setShowRelationshipMap(v => !v)}>{showRelationshipMap ? 'Afficher les fiches' : 'Voir la carte de l’univers'}</button></div></div>
