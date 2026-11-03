@@ -267,3 +267,9 @@
  .genealogy-branch{flex:0 0 185px}
  .genealogy-manage{padding:14px}
 }
+
+
+.project-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.project-heading-actions .secondary-button{padding:10px 14px;border:1px solid #cdb897;border-radius:9px;background:#f7efe3;color:#725638;font:inherit;font-size:13px;cursor:pointer}
+.project-heading-actions .secondary-button:hover{background:#efe2cf;border-color:#ad8c60}
+@media(max-width:600px){.project-heading-actions{width:100%;justify-content:stretch}.project-heading-actions button{flex:1}}
