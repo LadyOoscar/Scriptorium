@@ -269,3 +269,52 @@
 }
 
 
+
+
+/* Filiation : connecteurs verticaux nets, code visuel stable et lisible */
+.genealogy-branch-list{
+ position:relative;display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;
+ gap:18px 24px;padding:22px 14px 30px;margin:0 auto;
+}
+.genealogy-branch-list:before{
+ content:"";position:absolute;top:0;left:50%;height:15px;width:2px;
+ background:linear-gradient(#cbb797,#a98a61);opacity:.8;
+}
+.genealogy-branch{
+ position:relative;min-width:190px;max-width:250px;gap:7px;
+ padding:14px 18px 13px;border:1px solid #d8c5a8;border-radius:13px;
+ background:linear-gradient(160deg,#fffefa,#f7efe3);
+ box-shadow:0 5px 15px #55412612;
+}
+.genealogy-branch:before{
+ content:"";position:absolute;left:50%;top:-19px;height:18px;width:2px;
+ background:#b69a74;
+}
+.genealogy-branch:after{
+ content:"";position:absolute;left:calc(50% - 4px);top:-5px;width:8px;height:8px;
+ border-radius:50%;background:#b69a74;box-shadow:0 0 0 3px #f8f1e6;
+}
+.genealogy-branch-parent,.genealogy-branch-child{
+ max-width:100%;overflow-wrap:anywhere;text-align:center;
+ color:#493a29;font-size:13px;line-height:1.35;
+}
+.genealogy-branch i{width:2px;height:13px;background:linear-gradient(#b99b74,#d8c4a6)}
+.genealogy-branch-joint{
+ width:28px;height:28px;border:1px solid #c7aa80;
+ background:#f4e8d5;color:#87653d;font-size:16px;
+ box-shadow:0 2px 5px #65451b12;
+}
+.genealogy-branch small{font-size:9px;letter-spacing:.13em;font-weight:750;color:#92734e}
+.genealogy-branch.adoptive{
+ border:1px dashed #9b88b3;
+ background:linear-gradient(160deg,#fffaff,#f1eaf7);
+}
+.genealogy-branch.adoptive:before,.genealogy-branch.adoptive:after,
+.genealogy-branch.adoptive i{background:#9d8ab5}
+.genealogy-branch.adoptive .genealogy-branch-joint{
+ border-style:dashed;background:#eee7f5;color:#78628e;
+}
+@media(max-width:760px){
+ .genealogy-branch-list{justify-content:flex-start;gap:18px 14px;padding:20px 8px 26px}
+ .genealogy-branch{flex:0 0 185px;min-width:185px}
+}
