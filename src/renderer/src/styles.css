@@ -353,3 +353,46 @@
 .genealogy-generation{position:relative;z-index:1}
 .genealogy-generation-people{position:relative;z-index:2}
 .genealogy-node{position:relative;z-index:3}
+
+
+/* Confort de lecture et navigation de l'arbre */
+.genealogy-tools{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+ margin:12px 0 8px;
+}
+.genealogy-search{
+ display:flex;align-items:center;gap:9px;min-width:min(100%,280px);width:min(100%,360px);
+ padding:10px 13px;border:1px solid #e3d6c4;border-radius:12px;
+ background:#fffdf9;color:#987b59;box-shadow:0 2px 8px #5d48200a;
+}
+.genealogy-search:focus-within{border-color:#b9986b;box-shadow:0 0 0 3px #c7a77b24}
+.genealogy-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#514332;font:inherit;font-size:13px}
+.genealogy-search input::placeholder{color:#a99a86}
+.genealogy-search button{display:grid;place-items:center;padding:3px;border:0;border-radius:6px;background:#f1e9dc;color:#8b765c;cursor:pointer}
+.genealogy-search-count{color:#93816b;font-size:11px;letter-spacing:.04em}
+.genealogy-node{transition:opacity .18s ease,filter .18s ease,box-shadow .18s ease,border-color .18s ease}
+.genealogy-node.is-dimmed{opacity:.28;filter:grayscale(.55)}
+.genealogy-node.is-match{border-color:#b58b51;box-shadow:0 0 0 3px #c49a5b35,0 8px 22px #59432918;opacity:1}
+.genealogy-node:focus-visible{outline:3px solid #b58b51;outline-offset:3px}
+.genealogy-canvas{
+ scroll-behavior:smooth;overscroll-behavior-x:contain;
+ scrollbar-width:thin;scrollbar-color:#cbb99f #f4ede3;
+}
+.genealogy-canvas::-webkit-scrollbar{height:10px}
+.genealogy-canvas::-webkit-scrollbar-track{background:#f1e9dd;border-radius:10px}
+.genealogy-canvas::-webkit-scrollbar-thumb{background:#c9b697;border:2px solid #f1e9dd;border-radius:10px}
+.genealogy-generation{padding:5px 8px 0}
+.genealogy-generation-label{position:sticky;left:12px;width:max-content;padding:7px 12px;border:1px solid #e8ddcc;border-radius:30px;background:#fffaf2;box-shadow:0 2px 8px #60451a0c}
+.genealogy-node:hover{border-color:#c6a77e;box-shadow:0 8px 22px #59432918}
+.genealogy-branch{transition:transform .18s ease,box-shadow .18s ease}
+.genealogy-branch:hover{transform:translateY(-2px);box-shadow:0 6px 16px #60451a12}
+@media(max-width:760px){
+ .genealogy-tools{align-items:stretch}
+ .genealogy-search{width:100%;box-sizing:border-box}
+ .genealogy-search-count{padding-left:3px}
+ .genealogy-canvas{margin:18px -4px 30px;padding:20px 14px 25px;border-radius:14px;-webkit-overflow-scrolling:touch}
+ .genealogy-generation-people{gap:12px}
+ .genealogy-node{min-height:118px;padding:12px 10px}
+ .genealogy-legend{gap:9px 12px;padding:11px}
+ .genealogy-legend span{font-size:10px}
+}
