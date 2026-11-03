@@ -17,6 +17,8 @@ export default function App() {
   const [dragPositions, setDragPositions] = useState<Record<string, { x: number; y: number }>>({})
   const genealogyDragging = useRef<{ id: string; x: number; y: number } | null>(null)
   const [genealogyOffsets, setGenealogyOffsets] = useState<Record<string, { x: number; y: number }>>({})
+  const [genealogyDraft, setGenealogyDraft] = useState<{ fromId: string; toId: string; term: string; type: string; description: string } | null>(null)
+
 
   const draggingEntityId = useRef<string | null>(null)
   const didDrag = useRef(false)
@@ -203,38 +205,18 @@ export default function App() {
     if (!workspace || !window.confirm('Supprimer cet événement de la frise ?')) return
     await save({ ...workspace, timelineEvents: (workspace.timelineEvents || []).filter(e => e.id !== eventId) })
   }
-  async function addGenealogyLink() {
-    if (!workspace || !activeProject) return
+  function addGenealogyLink() {
+    if (!activeProject) return
     const people = entities.filter(e => e.type === 'Personnage')
     if (people.length < 2) { window.alert('Créez au moins deux fiches de personnages pour établir une généalogie.'); return }
-    const choices = people.map((e, i) => (i + 1) + '. ' + e.name).join('\\n')
-    const from = window.prompt('Personnage qui décrit le lien (numéro) :\\n' + choices)
-    if (from === null) return
-    const source = people[Number(from) - 1]
-    if (!source) return
-    const to = window.prompt('Personnage lié à ' + source.name + ' (numéro) :\\n' + choices)
-    if (to === null) return
-    const target = people[Number(to) - 1]
-    if (!target || target.id === source.id) return
-    const rawType = window.prompt('Quel lien les unit ? Écris librement : « grand p », « mère », « cousin », « conjoint », « enfant adopté »…', 'parent')
-    if (rawType === null || !rawType.trim()) return
-    const normalized = rawType.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[’']/g, ' ').replace(/[^a-z ]/g, ' ').replace(/\\s+/g, ' ').trim()
-    const patterns: [RegExp, string][] = [
-      [/^(grand|grd) ?p(ere)?$/, 'Grand-père de'], [/^(grand|grd) ?m(ere)?$/, 'Grand-mère de'],
-      [/^(arriere grand|arriere grd) ?p(ere)?$/, 'Arrière-grand-père de'], [/^(arriere grand|arriere grd) ?m(ere)?$/, 'Arrière-grand-mère de'],
-      [/^(pere|papa|mere|maman)$/, 'Parent de'], [/^(fils|fille|enfant)$/, 'Enfant de'],
-      [/^(fils|fille) adopte(e)?$/, 'Enfant adopté de'], [/^(frere|soeur|sibling)$/, 'Frère / sœur de'],
-      [/^(demi frere|demi soeur)$/, 'Demi-frère / demi-sœur de'],
-      [/^(conjoint|conjointe|epoux|epouse|partenaire|mari|femme)$/, 'Union avec'],
-      [/^(oncle|tante)$/, 'Oncle / tante de'], [/^(neveu|niece)$/, 'Neveu / nièce de'],
-      [/^(cousin|cousine)$/, 'Cousin / cousine de'], [/^(beau pere|belle mere|beau parent)$/, 'Beau-parent de'],
-      [/^(adoptant|parent adoptif)$/, 'Adoptant de']
-    ]
-    const matched = patterns.find(([pattern]) => pattern.test(normalized))
-    const type = matched?.[1] || (rawType.trim().endsWith('de') ? rawType.trim() : rawType.trim() + ' de')
-    if (!window.confirm((matched ? 'Lien reconnu : ' : 'Lien personnalisé : ') + type + '\\n\\n' + source.name + ' → ' + target.name + '\\n\\nCréer ce lien ?')) return
-    const description = window.prompt('Précisions (facultatif)', '') ?? ''
-    await save({ ...workspace, genealogyLinks: [...(workspace.genealogyLinks || []), { id: newId(), projectId: activeProject.id, fromEntityId: source.id, toEntityId: target.id, type, description }] })
+    setGenealogyDraft({ fromId: people[0].id, toId: people[1].id, term: '', type: '', description: '' })
+  }
+  async function confirmGenealogyLink(typeOverride?: string) {
+    if (!workspace || !activeProject || !genealogyDraft) return
+    const type = typeOverride || genealogyDraft.type
+    if (!type.trim() || genealogyDraft.fromId === genealogyDraft.toId) return
+    await save({ ...workspace, genealogyLinks: [...(workspace.genealogyLinks || []), { id: newId(), projectId: activeProject.id, fromEntityId: genealogyDraft.fromId, toEntityId: genealogyDraft.toId, type, description: genealogyDraft.description }] })
+    setGenealogyDraft(null)
   }
   async function deleteGenealogyLink(linkId: string) {
     if (!workspace || !window.confirm('Supprimer ce lien familial ?')) return
@@ -425,6 +407,7 @@ export default function App() {
         {view === 'settings' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">UN ATELIER À VOTRE MESURE</span><h1>Modules & préférences</h1><p>Activez uniquement les outils dont vous avez besoin. Vos données restent conservées même si vous masquez un module.</p></div><div className="settings-list">{Object.entries(moduleLabels).map(([key,label]) => <label className="setting-row" key={key}><div><strong>{label}</strong><span>{({manuscripts:'Écriture, chapitres et scènes',encyclopedia:'Personnages, lieux et éléments du monde',notes:'Idées, fragments et inspirations',progress:'Statistiques de votre projet'} as Record<string,string>)[key]}</span></div><input type="checkbox" checked={workspace.modules[key] !== false} onChange={e => toggleModule(key,e.target.checked)}/></label>)}</div></div>}
       </section>
     </div>
+    {genealogyDraft && <div className="genealogy-modal-backdrop" onClick={() => setGenealogyDraft(null)}><section className="genealogy-modal" role="dialog" aria-modal="true" aria-labelledby="genealogy-modal-title" onClick={event => event.stopPropagation()}><button className="genealogy-modal-close" onClick={() => setGenealogyDraft(null)} aria-label="Fermer"><X size={18}/></button><span className="eyebrow">NOUVEAU LIEN</span><h2 id="genealogy-modal-title">Qui est qui ?</h2><label>Premier personnage<select value={genealogyDraft.fromId} onChange={event => setGenealogyDraft({ ...genealogyDraft, fromId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Relation à reconnaître<input autoFocus value={genealogyDraft.term} onChange={event => { const term = event.target.value; const normalized = term.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z ]/g,' ').replace(/\\s+/g,' ').trim(); const suggestions: [string,string[]][] = [['Grand-père de',['grand p','grand-pere','grand pere','grd p']],['Grand-mère de',['grand m','grand-mere','grand mere','grd m']],['Arrière-grand-père de',['arriere grand p','arriere grand pere']],['Arrière-grand-mère de',['arriere grand m','arriere grand mere']],['Parent de',['pere','papa','mere','maman','parent']],['Enfant de',['fils','fille','enfant']],['Enfant adopté de',['enfant adopte','fils adopte','fille adoptee']],['Frère / sœur de',['frere','soeur','frere soeur']],['Demi-frère / demi-sœur de',['demi frere','demi soeur']],['Union avec',['conjoint','conjointe','epoux','epouse','partenaire','mari','femme']],['Oncle / tante de',['oncle','tante']],['Neveu / nièce de',['neveu','niece']],['Cousin / cousine de',['cousin','cousine']],['Beau-parent de',['beau pere','belle mere','beau parent']],['Adoptant de',['adoptant','parent adoptif']]]; const match = suggestions.find(([label, aliases]) => aliases.some(alias => alias.startsWith(normalized) || normalized.startsWith(alias))); setGenealogyDraft({ ...genealogyDraft, term, type: match?.[0] || '' }) }}/><small>Écris quelques lettres : « grand p », « cous », « demi fr »…</small></label>{genealogyDraft.term.trim() && <div className="genealogy-suggestions"><span>Suggestion</span>{genealogyDraft.type ? <button onClick={() => setGenealogyDraft({ ...genealogyDraft, term: genealogyDraft.type, type: genealogyDraft.type })}>✦ {genealogyDraft.type}</button> : <p>Relation non reconnue. Tu pourras l'enregistrer comme lien personnalisé.</p>}</div>}<label>Deuxième personnage<select value={genealogyDraft.toId} onChange={event => setGenealogyDraft({ ...genealogyDraft, toId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Précisions (facultatif)<textarea rows={2} value={genealogyDraft.description} onChange={event => setGenealogyDraft({ ...genealogyDraft, description: event.target.value })}/></label><div className="genealogy-modal-actions"><button className="secondary-button" onClick={() => setGenealogyDraft(null)}>Annuler</button><button className="primary-button" disabled={!genealogyDraft.type || genealogyDraft.fromId === genealogyDraft.toId} onClick={() => confirmGenealogyLink()}>{genealogyDraft.type ? 'Créer : ' + genealogyDraft.type : 'Saisis une relation'}</button></div></section></div>}
     <footer className="statusbar"><span><span className="status-dot"/> Stockage local · {workspace.projects.length} projet(s)</span><span>Scriptorium · Version 0.2.0</span></footer>
   </main>
 }
