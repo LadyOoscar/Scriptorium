@@ -54,6 +54,7 @@ if (!window.scriptorium) {
           relations: Array.isArray(imported.relations) ? imported.relations : [],
           timelineEvents: Array.isArray(imported.timelineEvents) ? imported.timelineEvents : [],
           genealogyLinks: Array.isArray(imported.genealogyLinks) ? imported.genealogyLinks : [],
+          genealogyPositions: imported.genealogyPositions && typeof imported.genealogyPositions === 'object' ? imported.genealogyPositions : {},
           modules: { manuscripts: true, encyclopedia: true, notes: true, progress: true, ...(imported.modules || {}) }
         }
         await save(workspace)
