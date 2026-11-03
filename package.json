@@ -9,7 +9,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
-    "build:web": "vite build --config vite.web.config.ts"
+    "build:web": "mkdir -p public && cp node_modules/dictionary-fr/index.aff public/fr.aff && cp node_modules/dictionary-fr/index.dic public/fr.dic && vite build --config vite.web.config.ts"
   },
   "dependencies": {
     "@tiptap/extension-placeholder": "^3.0.9",
