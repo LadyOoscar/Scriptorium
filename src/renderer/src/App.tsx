@@ -95,6 +95,68 @@ export default function App() {
     await save({ ...workspace, projects: [project, ...workspace.projects] })
     setActiveProjectId(project.id); setActiveDocumentId(null); setView('projects')
   }
+  async function createGenealogyTestProject() {
+    if (!workspace) return
+    const now = new Date().toISOString()
+    const projectId = newId()
+    const project = { id: projectId, title: 'TEST — Les trois maisons', summary: 'Projet de démonstration isolé pour éprouver les filiations, alliances, adoptions et branches croisées de trois familles.', createdAt: now, updatedAt: now }
+    const people = [
+      ['Aldric Valombre','Maison Valombre','Fondateur de la maison, seigneur des Hautes-Terres.'],
+      ['Ysilde Valombre','Maison Valombre','Épouse d’Aldric, gardienne des archives familiales.'],
+      ['Maëlys Valombre','Maison Valombre','Fille d’Aldric et Ysilde, héritière de la maison.'],
+      ['Théodore Valombre','Maison Valombre','Fils cadet, adopté par sa tante après son enfance.'],
+      ['Éléonore Valombre','Maison Valombre','Fille de Maëlys et de son premier époux.'],
+      ['Gaspard Valombre','Maison Valombre','Fils de Maëlys et de son second compagnon.'],
+      ['Séverin Sombreval','Famille Sombreval','Mage érudit, patriarche de la lignée.'],
+      ['Morgane Sombreval','Famille Sombreval','Épouse de Séverin, guérisseuse réputée.'],
+      ['Isolde Sombreval','Famille Sombreval','Fille de Séverin et Morgane, liée aux Valombre.'],
+      ['Corvin Sombreval','Famille Sombreval','Fils de Séverin, père adoptif de Liora.'],
+      ['Liora Sombreval','Famille Sombreval','Enfant adoptée par Corvin, élevée parmi les mages.'],
+      ['Esmée Sombreval','Famille Sombreval','Fille d’Isolde et d’un membre du clan Aubefer.'],
+      ['Ronan Aubefer','Clan Aubefer','Chef du clan, ancien compagnon d’armes de Séverin.'],
+      ['Brune Aubefer','Clan Aubefer','Épouse de Ronan, stratège et diplomate.'],
+      ['Kaël Aubefer','Clan Aubefer','Fils de Ronan et Brune, allié des Valombre.'],
+      ['Sigrid Aubefer','Clan Aubefer','Fille de Ronan et Brune, voyageuse.'],
+      ['Ariane Aubefer','Clan Aubefer','Fille de Kaël et Maëlys, héritière de trois maisons.'],
+      ['Milo Aubefer','Clan Aubefer','Fils de Kaël et Isolde, au croisement des lignées.']
+    ] as const
+    const ids = Object.fromEntries(people.map(([name]) => [name, newId()])) as Record<string,string>
+    const entities: ScriptoriumEntity[] = people.map(([name, family, description]) => ({
+      id: ids[name], projectId, type: 'Personnage', name, description,
+      role: family, history: description, customFields: [{ id: newId(), label: 'Famille d’origine', value: family }],
+      updatedAt: now
+    }))
+    const pairs: [string,string,string,string?][] = [
+      ['Aldric Valombre','Ysilde Valombre','conjoint de'],
+      ['Aldric Valombre','Maëlys Valombre','parent de'],
+      ['Ysilde Valombre','Maëlys Valombre','parent de'],
+      ['Aldric Valombre','Théodore Valombre','adoptant de'],
+      ['Maëlys Valombre','Éléonore Valombre','parent de'],
+      ['Maëlys Valombre','Gaspard Valombre','parent de'],
+      ['Séverin Sombreval','Morgane Sombreval','conjoint de'],
+      ['Séverin Sombreval','Isolde Sombreval','parent de'],
+      ['Morgane Sombreval','Isolde Sombreval','parent de'],
+      ['Séverin Sombreval','Corvin Sombreval','parent de'],
+      ['Corvin Sombreval','Liora Sombreval','adoptant de'],
+      ['Isolde Sombreval','Esmée Sombreval','parent de'],
+      ['Ronan Aubefer','Brune Aubefer','conjoint de'],
+      ['Ronan Aubefer','Kaël Aubefer','parent de'],
+      ['Brune Aubefer','Kaël Aubefer','parent de'],
+      ['Ronan Aubefer','Sigrid Aubefer','parent de'],
+      ['Brune Aubefer','Sigrid Aubefer','parent de'],
+      ['Maëlys Valombre','Kaël Aubefer','conjoint de'],
+      ['Isolde Sombreval','Kaël Aubefer','conjoint de'],
+      ['Kaël Aubefer','Ariane Aubefer','parent de'],
+      ['Maëlys Valombre','Ariane Aubefer','parent de'],
+      ['Kaël Aubefer','Milo Aubefer','parent de'],
+      ['Isolde Sombreval','Milo Aubefer','parent de'],
+      ['Isolde Sombreval','Maëlys Valombre','alliée de','Alliance entre les familles Sombreval et Valombre.'],
+      ['Séverin Sombreval','Ronan Aubefer','frère d’armes','Leur alliance politique précède les unions entre les familles.']
+    ]
+    const genealogyLinks = pairs.map(([from,to,type,description]) => ({ id: newId(), projectId, fromEntityId: ids[from], toEntityId: ids[to], type, ...(description ? { description } : {}) }))
+    await save({ ...workspace, projects: [project, ...workspace.projects], entities: [...entities, ...workspace.entities], genealogyLinks: [...(workspace.genealogyLinks || []), ...genealogyLinks] })
+    setActiveProjectId(projectId); setActiveDocumentId(null); setActiveEntityId(null); setView('genealogy')
+  }
   async function updateProject(field: 'title' | 'summary', value: string) {
     if (!workspace || !activeProject) return
     await save({ ...workspace, projects: workspace.projects.map(p => p.id === activeProject.id ? { ...p, [field]: value, updatedAt: new Date().toISOString() } : p) })
@@ -379,7 +441,7 @@ export default function App() {
         </div>
         {view === 'projects' && <div className="content-scroll"><div className="welcome-panel"><p className="eyebrow">VOTRE ESPACE DE CRÉATION</p><h1>{activeProject?.title || 'Vos projets littéraires'}</h1><p>Un atelier organisé pour faire grandir vos histoires, de la première idée au dernier chapitre.</p></div>
           {activeProject && <div className="project-summary-card"><label>PRÉSENTATION DU PROJET</label><input className="project-title-input" value={activeProject.title} onChange={e => updateProject('title', e.target.value)}/><textarea value={activeProject.summary} onChange={e => updateProject('summary', e.target.value)} placeholder="Résumé, intention, ambiance de votre œuvre…"/><div className="project-stats"><span><BookOpen size={15}/> {projectDocuments.length} chapitre(s)</span><span><Users size={15}/> {entities.length} fiche(s)</span><span><Lightbulb size={15}/> {notes.length} idée(s)</span><span><BookMarked size={15}/> {wordCount.toLocaleString('fr-FR')} mots</span></div></div>}
-          <div className="section-heading"><div><span className="eyebrow">VOTRE BIBLIOTHÈQUE</span><h2>Projets littéraires</h2></div><button className="primary-button" onClick={createProject}><Plus size={16}/> Nouveau projet</button></div>
+          <div className="section-heading"><div><span className="eyebrow">VOTRE BIBLIOTHÈQUE</span><h2>Projets littéraires</h2></div><div className="project-heading-actions"><button className="secondary-button" onClick={createGenealogyTestProject}>Créer le test des 3 familles</button><button className="primary-button" onClick={createProject}><Plus size={16}/> Nouveau projet</button></div></div>
           <div className="project-grid">{workspace.projects.map(p => <button key={p.id} className={p.id === activeProjectId ? 'project-card selected' : 'project-card'} onClick={() => {setActiveProjectId(p.id);setActiveDocumentId(null)}}><div className="project-card-icon"><Feather size={19}/></div><strong>{p.title}</strong><span>{p.summary || 'Projet sans résumé'}</span><small>{workspace.documents.filter(d => d.projectId === p.id).length} chapitre(s)</small></button>)}</div>
         </div>}
         {view === 'manuscripts' && <>{activeDocument ? <div className={`page-wrap margin-${pageMargin} format-${pageFormat.toLowerCase()} orientation-${orientation} ${pageNumbers ? 'with-page-numbers' : 'without-page-numbers'}`}><input className="document-title" value={activeDocument.title} onChange={e => renameDocument(e.target.value)} aria-label="Titre du chapitre"/><div className="page-meta">{activeProject?.title.toUpperCase()} <span>·</span> MODIFIÉ {new Date(activeDocument.updatedAt).toLocaleDateString('fr-FR')}</div><EditorContent editor={editor}/><div className="page-footer"><span>Scriptorium</span><span>Écrivez à votre rythme.</span></div></div> : <div className="empty-module"><BookOpen size={32}/><h2>Le manuscrit attend ses mots.</h2><p>Créez un premier chapitre pour commencer à écrire.</p><button className="primary-button" onClick={createChapter}><FilePlus2 size={16}/> Créer un chapitre</button></div>}</>}
