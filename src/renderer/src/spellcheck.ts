@@ -1,6 +1,5 @@
 import nspell from 'nspell'
-import aff from 'dictionary-fr/index.aff?raw'
-import dic from 'dictionary-fr/index.dic?raw'
+import frenchDictionary from 'dictionary-fr'
 
 export type LocalSpellingIssue = {
   word: string
@@ -12,7 +11,11 @@ export type LocalSpellingIssue = {
 let spellEngine: ReturnType<typeof nspell> | null = null
 
 function getSpellEngine() {
-  if (!spellEngine) spellEngine = nspell(aff, dic)
+  if (!spellEngine) {
+    const aff = new TextDecoder().decode(frenchDictionary.aff as unknown as Uint8Array)
+    const dic = new TextDecoder().decode(frenchDictionary.dic as unknown as Uint8Array)
+    spellEngine = nspell(aff, dic)
+  }
   return spellEngine
 }
 
