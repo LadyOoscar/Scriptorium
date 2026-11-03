@@ -178,3 +178,14 @@
 .genealogy-manage-row>div span{color:#9b7953;font-size:12px;font-variant:small-caps}
 .genealogy-manage-row small{width:100%;color:#827665}
 @media(max-width:760px){.genealogy-canvas{padding:20px 14px}.genealogy-generation-people{flex-wrap:nowrap;justify-content:flex-start}.genealogy-node{width:165px;flex:0 0 165px}.genealogy-manage-row{align-items:flex-start}.genealogy-manage-row>div{gap:5px}}
+
+
+/* Branches familiales explicites */
+.genealogy-branch-list{display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;gap:12px 22px;padding:8px 10px 22px}
+.genealogy-branch{min-width:170px;max-width:230px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 16px 12px;border:1px solid #dfcfb8;border-radius:12px;background:#fbf7ef;color:#594936}
+.genealogy-branch-parent,.genealogy-branch-child{font-family:Georgia,serif;font-size:13px;font-weight:600}
+.genealogy-branch i{display:block;width:1px;height:12px;background:#b99b74}
+.genealogy-branch-joint{width:24px;height:24px;display:grid;place-items:center;border:1px solid #c9ad87;border-radius:50%;background:#f2e7d6;color:#98744b;font-size:14px}
+.genealogy-branch small{margin-top:3px;font-size:9px;letter-spacing:.12em;color:#987c5a}
+.genealogy-branch.adoptive{border-style:dashed;border-color:#9b8bb0;background:#f7f3fa}
+.genealogy-branch.adoptive .genealogy-branch-joint{border-color:#a99ab9;background:#eee7f4;color:#78628f}
