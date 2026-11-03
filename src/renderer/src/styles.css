@@ -436,3 +436,30 @@
 .ProseMirror .scriptorium-proofread-error:hover {
   background: rgba(195, 77, 77, .09);
 }
+
+
+/* Trois présentations du manuscrit */
+.layout-mode-picker{max-width:150px!important}
+.publisher-picker{max-width:150px!important}
+.page-wrap.layout-writing{max-width:900px;min-height:1123px}
+.page-wrap.layout-submission{max-width:794px;min-height:1123px;padding-top:70px;padding-bottom:55px;background:#fff}
+.page-wrap.layout-submission .document-title{font-family:'Times New Roman',serif;font-size:16px;font-weight:400;text-align:center;margin:0 0 35px}
+.page-wrap.layout-submission .page-meta{display:none}
+.page-wrap.layout-submission .writing-surface{font-family:'Times New Roman',serif!important;font-size:12pt!important;line-height:2!important;color:#111}
+.page-wrap.layout-submission .writing-surface p{margin:0 0 0;text-indent:1.25cm}
+.page-wrap.layout-novel{max-width:559px;min-height:794px;padding:52px 48px 35px;background:#fdfaf2;border-color:#e8dfce;box-shadow:0 8px 30px #57462a18}
+.page-wrap.layout-novel .document-title{font-family:Garamond,'Book Antiqua',serif;font-size:25px;text-align:center;margin:28px 0 30px}
+.page-wrap.layout-novel .page-meta{display:none}
+.page-wrap.layout-novel .writing-surface{font-family:Garamond,'Book Antiqua',serif!important;font-size:12pt!important;line-height:1.5!important;color:#342f28}
+.page-wrap.layout-novel .writing-surface p{text-indent:1.1em;margin:0 0 .45em}
+.page-wrap.layout-novel .writing-surface h2{text-align:center;font-variant:small-caps;font-size:19px;margin:2.8em 0 1.8em}
+@media print{
+ .page-wrap.layout-submission .writing-surface{font-family:'Times New Roman',serif!important;font-size:12pt!important;line-height:2!important}
+ .page-wrap.layout-novel{max-width:none!important;min-height:0!important;background:white!important;padding:0!important}
+ .page-wrap.layout-novel .writing-surface{font-family:Garamond,'Book Antiqua',serif!important;font-size:12pt!important;line-height:1.5!important}
+}
+@media(max-width:760px){
+ .layout-mode-picker,.publisher-picker{max-width:130px!important}
+ .page-wrap.layout-novel{max-width:100%;min-height:0;padding:32px 25px}
+ .page-wrap.layout-submission{padding:38px 28px}
+}
