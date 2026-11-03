@@ -396,3 +396,15 @@
  .genealogy-legend{gap:9px 12px;padding:11px}
  .genealogy-legend span{font-size:10px}
 }
+
+
+/* Navigation libre de l'arbre : zoom, dézoom et vue d'ensemble */
+.genealogy-zoom-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.genealogy-zoom-tools button{min-width:34px;min-height:34px;padding:5px 10px;border:1px solid #d8c6ad;border-radius:9px;background:#fffaf2;color:#765f43;font:inherit;cursor:pointer}
+.genealogy-zoom-tools button:last-child{font-size:12px;font-weight:650}
+.genealogy-zoom-tools input{width:clamp(80px,13vw,150px);accent-color:#98764f}
+.genealogy-zoom-tools span{min-width:42px;color:#8b765c;font-size:11px;text-align:center;font-variant-numeric:tabular-nums}
+.genealogy-canvas{max-height:72vh;min-height:360px;overflow:auto;position:relative;touch-action:pan-x pan-y}
+.genealogy-zoom-layer{position:relative;transform-origin:top left}
+.genealogy-zoom-layer>.genealogy-connectors{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
+@media(max-width:760px){.genealogy-canvas{max-height:68vh;min-height:320px}.genealogy-zoom-tools{width:100%;justify-content:space-between}.genealogy-zoom-tools input{flex:1;min-width:65px}}
