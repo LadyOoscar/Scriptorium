@@ -154,3 +154,27 @@
 .timeline-card-actions .text-action{margin:0}
 .timeline-event-card{transition:transform .18s ease,box-shadow .18s ease}
 .timeline-event-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px #5e472018}
+
+
+/* Arbre généalogique : générations et lignées */
+.genealogy-canvas{margin:30px 0 44px;padding:28px 22px 34px;border:1px solid #e5d8c5;border-radius:18px;background:radial-gradient(ellipse at 50% 0%,#fffdf8 0%,#f5eee3 72%);overflow-x:auto;box-shadow:inset 0 1px #fff}
+.genealogy-generation{min-width:max-content;position:relative;text-align:center}
+.genealogy-generation-label{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 18px;color:#98764f;font-size:10px;font-weight:700;letter-spacing:.18em}
+.genealogy-generation-label i{width:34px;height:1px;background:#d8c5a8}
+.genealogy-generation-people{display:flex;justify-content:center;align-items:stretch;gap:18px;flex-wrap:wrap}
+.genealogy-node{width:190px;min-height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:15px 12px;border:1px solid #d9c5a6;border-radius:13px;background:linear-gradient(150deg,#fffefa,#f4eadb);box-shadow:0 5px 16px #654b2610;color:#493c2d}
+.genealogy-node-flourish{color:#a37a4d;font-size:18px}
+.genealogy-node strong{font-family:Georgia,serif;font-size:16px}
+.genealogy-node small{color:#887966;font-size:11px}
+.genealogy-node-links{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.genealogy-node-links span{font-size:10px;color:#8c7356}
+.genealogy-generation-connector{height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a98a65}
+.genealogy-generation-connector i{height:13px;width:1px;background:#cbb493}
+.genealogy-generation-connector span{font-size:18px;line-height:20px}
+.genealogy-manage{margin:28px 0 50px}
+.genealogy-manage h2{font-family:Georgia,serif;color:#4b3d2d;font-size:20px;margin-bottom:13px}
+.genealogy-manage-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #e9dfd1}
+.genealogy-manage-row>div{display:flex;align-items:center;flex-wrap:wrap;gap:9px;color:#554735}
+.genealogy-manage-row>div span{color:#9b7953;font-size:12px;font-variant:small-caps}
+.genealogy-manage-row small{width:100%;color:#827665}
+@media(max-width:760px){.genealogy-canvas{padding:20px 14px}.genealogy-generation-people{flex-wrap:nowrap;justify-content:flex-start}.genealogy-node{width:165px;flex:0 0 165px}.genealogy-manage-row{align-items:flex-start}.genealogy-manage-row>div{gap:5px}}
