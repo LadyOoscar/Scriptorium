@@ -299,11 +299,28 @@ export default function App() {
     return []
   }).filter(edge => genealogyPeople.some(p => p.id === edge.parent) && genealogyPeople.some(p => p.id === edge.child))
   const generationById: Record<string, number> = {}
-  const getGeneration = (id: string, trail: string[] = []): number => {
+  const isInParentCycle = (startId: string): boolean => {
+    const visit = (id: string, visited: Set<string>): boolean => {
+      for (const edge of parentEdges.filter(item => item.parent === id)) {
+        if (edge.child === startId) return true
+        if (!visited.has(edge.child)) {
+          const next = new Set(visited)
+          next.add(edge.child)
+          if (visit(edge.child, next)) return true
+        }
+      }
+      return false
+    }
+    return visit(startId, new Set([startId]))
+  }
+  const cyclicPeople = new Set(genealogyPeople.filter(person => isInParentCycle(person.id)).map(person => person.id))
+  const getGeneration = (id: string, trail: Set<string> = new Set()): number => {
     if (generationById[id] !== undefined) return generationById[id]
-    if (trail.includes(id)) return 0
+    if (cyclicPeople.has(id) || trail.has(id)) return 0
+    const nextTrail = new Set(trail)
+    nextTrail.add(id)
     const parents = parentEdges.filter(edge => edge.child === id)
-    const level = parents.length ? Math.min(8, Math.max(...parents.map(edge => getGeneration(edge.parent, [...trail, id]) + (/arrière-grand/.test(edge.link.type.toLocaleLowerCase('fr')) ? 3 : /grand-/.test(edge.link.type.toLocaleLowerCase('fr')) ? 2 : 1)))) : 0
+    const level = parents.length ? Math.min(8, Math.max(...parents.map(edge => getGeneration(edge.parent, nextTrail) + (/arrière-grand/.test(edge.link.type.toLocaleLowerCase('fr')) ? 3 : /grand-/.test(edge.link.type.toLocaleLowerCase('fr')) ? 2 : 1)))) : 0
     generationById[id] = level
     return level
   }
