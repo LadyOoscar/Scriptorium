@@ -403,8 +403,8 @@ export default function App() {
 
   const parentEdges = genealogyLinks.flatMap(link => {
     const type = link.type.toLocaleLowerCase('fr')
-    if (type === 'parent de' || type === 'adoptant de' || type === 'grand-père de' || type === 'grand-mère de' || type === 'arrière-grand-père de' || type === 'arrière-grand-mère de') return [{ parent: link.fromEntityId, child: link.toEntityId, link }]
-    if (type === 'enfant de' || type === 'enfant adopté de') return [{ parent: link.toEntityId, child: link.fromEntityId, link }]
+    if (['parent de','adoptant de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de','ancêtre de'].includes(type)) return [{ parent: link.fromEntityId, child: link.toEntityId, link }]
+    if (['enfant de','enfant adopté de','petit-fils de','petite-fille de','arrière-petit-fils de','arrière-petite-fille de','descendant de'].includes(type)) return [{ parent: link.toEntityId, child: link.fromEntityId, link }]
     return []
   }).filter(edge => genealogyPeople.some(p => p.id === edge.parent) && genealogyPeople.some(p => p.id === edge.child))
   const generationById: Record<string, number> = {}
@@ -470,7 +470,7 @@ export default function App() {
     const offset = genealogyOffsets[id]
     if (offset) await save({ ...workspace, genealogyPositions: { ...(workspace.genealogyPositions || {}), [id]: offset } })
   }
-  const otherGenealogyLinks = genealogyLinks.filter(link => !['parent de','enfant de','adoptant de','enfant adopté de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de'].includes(link.type.toLocaleLowerCase('fr')))
+  const otherGenealogyLinks = genealogyLinks.filter(link => !['parent de','enfant de','adoptant de','enfant adopté de','grand-père de','grand-mère de','arrière-grand-père de','arrière-grand-mère de','petit-fils de','petite-fille de','arrière-petit-fils de','arrière-petite-fille de','ancêtre de','descendant de'].includes(link.type.toLocaleLowerCase('fr')))
   const nav = [{ id: 'projects', label: 'Mes projets', icon: <Library size={16}/> }, { id: 'manuscripts', label: moduleLabels.manuscripts, icon: <BookOpen size={16}/>, module: 'manuscripts' }, { id: 'encyclopedia', label: moduleLabels.encyclopedia, icon: <Users size={16}/>, module: 'encyclopedia' }, { id: 'notes', label: moduleLabels.notes, icon: <Lightbulb size={16}/>, module: 'notes' }, { id: 'progress', label: moduleLabels.progress, icon: <ChartNoAxesColumn size={16}/>, module: 'progress' }, { id: 'timeline', label: 'Frise chronologique', icon: <CalendarDays size={16}/> }, { id: 'genealogy', label: 'Arbre généalogique', icon: <GitBranch size={16}/> }]
 
   return <main className="app-shell">
@@ -554,7 +554,56 @@ export default function App() {
         {view === 'settings' && <div className="content-scroll"><div className="module-heading"><span className="eyebrow">UN ATELIER À VOTRE MESURE</span><h1>Modules & préférences</h1><p>Activez uniquement les outils dont vous avez besoin. Vos données restent conservées même si vous masquez un module.</p></div><div className="settings-list">{Object.entries(moduleLabels).map(([key,label]) => <label className="setting-row" key={key}><div><strong>{label}</strong><span>{({manuscripts:'Écriture, chapitres et scènes',encyclopedia:'Personnages, lieux et éléments du monde',notes:'Idées, fragments et inspirations',progress:'Statistiques de votre projet'} as Record<string,string>)[key]}</span></div><input type="checkbox" checked={workspace.modules[key] !== false} onChange={e => toggleModule(key,e.target.checked)}/></label>)}</div></div>}
       </section>
     </div>
-    {genealogyDraft && <div className="genealogy-modal-backdrop" onClick={() => setGenealogyDraft(null)}><section className="genealogy-modal" role="dialog" aria-modal="true" aria-labelledby="genealogy-modal-title" onClick={event => event.stopPropagation()}><button className="genealogy-modal-close" onClick={() => setGenealogyDraft(null)} aria-label="Fermer"><X size={18}/></button><span className="eyebrow">NOUVEAU LIEN</span><h2 id="genealogy-modal-title">Qui est qui ?</h2><label>Premier personnage<select value={genealogyDraft.fromId} onChange={event => setGenealogyDraft({ ...genealogyDraft, fromId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Relation à reconnaître<input autoFocus value={genealogyDraft.term} onChange={event => { const term = event.target.value; const normalized = term.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z ]/g,' ').replace(/\\s+/g,' ').trim(); const suggestions: [string,string[]][] = [['Grand-père de',['grand p','grand-pere','grand pere','grd p']],['Grand-mère de',['grand m','grand-mere','grand mere','grd m']],['Arrière-grand-père de',['arriere grand p','arriere grand pere']],['Arrière-grand-mère de',['arriere grand m','arriere grand mere']],['Parent de',['pere','papa','mere','maman','parent']],['Enfant de',['fils','fille','enfant']],['Enfant adopté de',['enfant adopte','fils adopte','fille adoptee']],['Frère / sœur de',['frere','soeur','frere soeur']],['Demi-frère / demi-sœur de',['demi frere','demi soeur']],['Union avec',['conjoint','conjointe','epoux','epouse','partenaire','mari','femme']],['Oncle / tante de',['oncle','tante']],['Neveu / nièce de',['neveu','niece']],['Cousin / cousine de',['cousin','cousine']],['Beau-parent de',['beau pere','belle mere','beau parent']],['Adoptant de',['adoptant','parent adoptif']]]; const match = suggestions.find(([label, aliases]) => aliases.some(alias => alias.startsWith(normalized) || normalized.startsWith(alias))); setGenealogyDraft({ ...genealogyDraft, term, type: match?.[0] || '' }) }}/><small>Écris quelques lettres : « grand p », « cous », « demi fr »…</small></label>{genealogyDraft.term.trim() && <div className="genealogy-suggestions"><span>Suggestion</span>{genealogyDraft.type ? <button onClick={() => setGenealogyDraft({ ...genealogyDraft, term: genealogyDraft.type, type: genealogyDraft.type })}>✦ {genealogyDraft.type}</button> : <p>Relation non reconnue. Tu pourras l'enregistrer comme lien personnalisé.</p>}</div>}<label>Deuxième personnage<select value={genealogyDraft.toId} onChange={event => setGenealogyDraft({ ...genealogyDraft, toId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Précisions (facultatif)<textarea rows={2} value={genealogyDraft.description} onChange={event => setGenealogyDraft({ ...genealogyDraft, description: event.target.value })}/></label><div className="genealogy-modal-actions"><button className="secondary-button" onClick={() => setGenealogyDraft(null)}>Annuler</button><button className="primary-button" disabled={!genealogyDraft.type || genealogyDraft.fromId === genealogyDraft.toId} onClick={() => confirmGenealogyLink()}>{genealogyDraft.type ? 'Créer : ' + genealogyDraft.type : 'Saisis une relation'}</button></div></section></div>}
+    {genealogyDraft && <div className="genealogy-modal-backdrop" onClick={() => setGenealogyDraft(null)}><section className="genealogy-modal" role="dialog" aria-modal="true" aria-labelledby="genealogy-modal-title" onClick={event => event.stopPropagation()}><button className="genealogy-modal-close" onClick={() => setGenealogyDraft(null)} aria-label="Fermer"><X size={18}/></button><span className="eyebrow">NOUVEAU LIEN</span><h2 id="genealogy-modal-title">Qui est qui ?</h2><label>Premier personnage<select value={genealogyDraft.fromId} onChange={event => setGenealogyDraft({ ...genealogyDraft, fromId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Relation à reconnaître<input autoFocus value={genealogyDraft.term} onChange={event => { const term = event.target.value; const normalized = term.toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z ]/g,' ').replace(/\\s+/g,' ').trim(); const suggestions: [string,string[]][] = [
+                    ['Grand-père de',['grand p','grand-pere','grand pere','grd p']],
+                    ['Grand-mère de',['grand m','grand-mere','grand mere','grd m']],
+                    ['Petit-fils de',['petit fils','petit-fils','pt fils']],
+                    ['Petite-fille de',['petite fille','petite-fille']],
+                    ['Arrière-grand-père de',['arriere grand p','arriere grand pere']],
+                    ['Arrière-grand-mère de',['arriere grand m','arriere grand mere']],
+                    ['Arrière-petit-fils de',['arriere petit fils']],
+                    ['Arrière-petite-fille de',['arriere petite fille']],
+                    ['Parent de',['pere','papa','mere','maman','parent']],
+                    ['Enfant de',['fils','fille','enfant']],
+                    ['Enfant adopté de',['enfant adopte','fils adopte','fille adoptee']],
+                    ['Adoptant de',['adoptant','parent adoptif']],
+                    ['Frère / sœur de',['frere','soeur','frere soeur']],
+                    ['Demi-frère / demi-sœur de',['demi frere','demi soeur']],
+                    ['Beau-frère / belle-sœur de',['beau frere','belle soeur','beau-frere','belle-soeur']],
+                    ['Oncle / tante de',['oncle','tante']],
+                    ['Grand-oncle / grand-tante de',['grand oncle','grand-oncle','grand tante','grand-tante']],
+                    ['Arrière-grand-oncle / arrière-grand-tante de',['arriere grand oncle','arriere grand tante']],
+                    ['Neveu / nièce de',['neveu','niece']],
+                    ['Petit-neveu / petite-nièce de',['petit neveu','petite niece','petit-neveu']],
+                    ['Cousin / cousine de',['cousin','cousine']],
+                    ['Cousin germain de',['cousin germain','cousine germaine']],
+                    ['Cousin issu de germain de',['cousin issu','cousine issue']],
+                    ['Demi-cousin / demi-cousine de',['demi cousin','demi cousine']],
+                    ['Beau-parent de',['beau pere','belle mere','beau parent']],
+                    ['Beau-fils / belle-fille de',['beau fils','belle fille']],
+                    ['Beau-frère / belle-sœur de',['beau frere','belle soeur']],
+                    ['Conjoint / conjointe de',['conjoint','conjointe','epoux','epouse','partenaire','mari','femme']],
+                    ['Concubin / concubine de',['concubin','concubine']],
+                    ['Compagnon / compagne de',['compagnon','compagne']],
+                    ['Fiancé / fiancée de',['fiance','fiancee']],
+                    ['Amant / amante de',['amant','amante']],
+                    ['Ex-conjoint / ex-conjointe de',['ex conjoint','ex conjointe']],
+                    ['Pupille de',['pupille']],
+                    ['Tuteur / tutrice de',['tuteur','tutrice']],
+                    ['Responsable légal de',['responsable legal']],
+                    ['Parrain / marraine de',['parrain','marraine']],
+                    ['Filleul / filleule de',['filleul','filleule']],
+                    ['Protégé / protégée de',['protege','protegee']],
+                    ['Maître / maîtresse de',['maitre','maitresse']],
+                    ['Disciple de',['disciple']],
+                    ['Famille d’accueil de',['famille accueil']],
+                    ['Frère / sœur de lait de',['frere de lait','soeur de lait']],
+                    ['Jumeau / jumelle de',['jumeau','jumelle']],
+                    ['Ancêtre de',['ancetre']],
+                    ['Descendant de',['descendant']],
+                    ['Belle-famille de',['belle famille']],
+                    ['Membre de la famille de',['famille']]
+                  ]; const match = suggestions.find(([label, aliases]) => aliases.some(alias => alias.startsWith(normalized) || normalized.startsWith(alias))); setGenealogyDraft({ ...genealogyDraft, term, type: match?.[0] || '' }) }}/><small>Écris quelques lettres : « grand p », « cous », « demi fr »…</small></label>{genealogyDraft.term.trim() && <div className="genealogy-suggestions"><span>Suggestion</span>{genealogyDraft.type ? <button onClick={() => setGenealogyDraft({ ...genealogyDraft, term: genealogyDraft.type, type: genealogyDraft.type })}>✦ {genealogyDraft.type}</button> : <p>Relation non reconnue. Tu pourras l'enregistrer comme lien personnalisé.</p>}</div>}<label>Deuxième personnage<select value={genealogyDraft.toId} onChange={event => setGenealogyDraft({ ...genealogyDraft, toId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Précisions (facultatif)<textarea rows={2} value={genealogyDraft.description} onChange={event => setGenealogyDraft({ ...genealogyDraft, description: event.target.value })}/></label><div className="genealogy-modal-actions"><button className="secondary-button" onClick={() => setGenealogyDraft(null)}>Annuler</button><button className="primary-button" disabled={!genealogyDraft.type || genealogyDraft.fromId === genealogyDraft.toId} onClick={() => confirmGenealogyLink()}>{genealogyDraft.type ? 'Créer : ' + genealogyDraft.type : 'Saisis une relation'}</button></div></section></div>}
     <footer className="statusbar"><span><span className="status-dot"/> Stockage local · {workspace.projects.length} projet(s)</span><span>Scriptorium · Version 0.2.0</span></footer>
   </main>
 }
