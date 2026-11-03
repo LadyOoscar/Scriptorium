@@ -479,3 +479,33 @@
   .page-wrap.layout-submission .writing-surface h2{break-after:avoid-page}
 }
 @media(max-width:760px){.auto-format-button{padding:0 8px;font-size:9px}}
+
+
+/* Panneau de suggestions du correcteur, accessible sur petits écrans */
+.proofreading-suggestions-panel{
+  margin:14px 0;padding:14px 16px;border:1px solid var(--line,#ddd4c7);
+  border-radius:12px;background:var(--surface,#faf7f0);color:var(--text,#3f372e);
+  box-shadow:0 8px 28px rgba(45,35,22,.12);
+}
+.proofreading-suggestions-header{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky;top:0;padding:2px 0 10px;background:var(--surface,#faf7f0);
+  border-bottom:1px solid var(--line,#ddd4c7);z-index:1;
+}
+.proofreading-suggestions-header h3{font-size:15px;line-height:1.3;margin:0;font-weight:650}
+.proofreading-close{flex:0 0 auto;min-height:36px;padding:7px 11px;border:1px solid var(--line,#ddd4c7);border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:12px}
+@media(max-width:760px){
+  .proofreading-suggestions-panel{
+    position:fixed!important;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:10000!important;width:auto;max-height:58dvh;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    box-sizing:border-box;margin:0;padding:14px 14px 18px;
+    border:1px solid #d8c8b2;border-radius:16px;background:#fffdf8;color:#40372c;
+    box-shadow:0 12px 40px rgba(25,20,14,.28);
+  }
+  .proofreading-suggestions-header{background:#fffdf8}
+  .proofreading-suggestions-header h3{font-size:14px}
+  .proofreading-close{min-height:40px;background:#f4eee5}
+  .proofreading-suggestions-panel>div{padding:12px 0!important}
+  .proofreading-suggestions-panel button{min-height:40px;touch-action:manipulation}
+}
