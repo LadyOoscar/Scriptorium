@@ -1,5 +1,6 @@
 import nspell from 'nspell'
-import dictionary from 'dictionary-fr'
+import aff from 'dictionary-fr/index.aff?raw'
+import dic from 'dictionary-fr/index.dic?raw'
 
 export type LocalSpellingIssue = {
   word: string
@@ -11,7 +12,7 @@ export type LocalSpellingIssue = {
 let spellEngine: ReturnType<typeof nspell> | null = null
 
 function getSpellEngine() {
-  if (!spellEngine) spellEngine = nspell(dictionary as unknown as { aff: string; dic: string })
+  if (!spellEngine) spellEngine = nspell(aff, dic)
   return spellEngine
 }
 
@@ -28,15 +29,9 @@ export async function checkFrenchSpelling(doc: {
       if (word.length < 2 || /^\p{Lu}+$/u.test(word)) continue
       if (!spell.correct(word)) {
         const start = position + (match.index ?? 0)
-        issues.push({
-          word,
-          from: start,
-          to: start + word.length,
-          suggestions: spell.suggest(word).slice(0, 4)
-        })
+        issues.push({ word, from: start, to: start + word.length, suggestions: spell.suggest(word).slice(0, 4) })
       }
     }
-    return
   })
   return issues
 }
