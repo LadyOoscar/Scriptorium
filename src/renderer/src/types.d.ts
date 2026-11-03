@@ -24,6 +24,8 @@ type ScriptoriumWorkspace = {
   entities: ScriptoriumEntity[]
   notes: ScriptoriumNote[]
   relations?: ScriptoriumRelation[]
+  timelineEvents?: { id: string; projectId: string; title: string; date: string; period?: string; category: string; description: string; entityIds?: string[] }[]
+  genealogyLinks?: { id: string; projectId: string; fromEntityId: string; toEntityId: string; type: string; description?: string }[]
   graphPositions?: Record<string, { x: number; y: number }>
   modules: Record<string, boolean>
 }
