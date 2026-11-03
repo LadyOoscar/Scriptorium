@@ -602,7 +602,22 @@ export default function App() {
                     ['Ancêtre de',['ancetre']],
                     ['Descendant de',['descendant']],
                     ['Belle-famille de',['belle famille']],
-                    ['Membre de la famille de',['famille']]
+                    ['Membre de la famille de',['famille']],
+                    ['Parent biologique de',['parent biologique','pere biologique','mere biologique','geniteur','genitrice']],
+                    ['Parent nourricier de',['parent nourricier','parent de coeur','parent de cœur']],
+                    ['Mère porteuse de',['mere porteuse','mere gestatrice']],
+                    ['Héritier / héritière de',['heritier','heritiere','successeur','successeure']],
+                    ['Lignée de sang de',['lien de sang','sang de','parente de sang']],
+                    ['Frère juré / sœur jurée de',['frere jure','soeur juree','fratrie juree']],
+                    ['Lié·e par serment à',['lie par serment','liee par serment','serment de']],
+                    ['Lié·e par destinée à',['lie par destinee','liee par destinee','destinee commune']],
+                    ['Réincarnation de',['reincarnation','reincarne de','reincarnee de']],
+                    ['Âme sœur de',['ame soeur','ame soeur']],
+                    ['Protégé·e par un pacte de',['protege par pacte','protegee par pacte','pacte de protection']],
+                    ['Créateur / créatrice de',['createur','creatrice','cree par']],
+                    ['Créature de',['creature de','creation de']],
+                    ['Clône / clone de',['clone','clonage']],
+                    ['Double / sosie de',['double de','sosie de','alter ego']]
                   ]; const match = suggestions.find(([label, aliases]) => aliases.some(alias => alias.startsWith(normalized) || normalized.startsWith(alias))); setGenealogyDraft({ ...genealogyDraft, term, type: match?.[0] || '' }) }}/><small>Écris quelques lettres : « grand p », « cous », « demi fr »…</small></label>{genealogyDraft.term.trim() && <div className="genealogy-suggestions"><span>Suggestion</span>{genealogyDraft.type ? <button onClick={() => setGenealogyDraft({ ...genealogyDraft, term: genealogyDraft.type, type: genealogyDraft.type })}>✦ {genealogyDraft.type}</button> : <p>Relation non reconnue. Tu pourras l'enregistrer comme lien personnalisé.</p>}</div>}<label>Deuxième personnage<select value={genealogyDraft.toId} onChange={event => setGenealogyDraft({ ...genealogyDraft, toId: event.target.value })}>{genealogyPeople.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Précisions (facultatif)<textarea rows={2} value={genealogyDraft.description} onChange={event => setGenealogyDraft({ ...genealogyDraft, description: event.target.value })}/></label><div className="genealogy-modal-actions"><button className="secondary-button" onClick={() => setGenealogyDraft(null)}>Annuler</button><button className="primary-button" disabled={!genealogyDraft.type || genealogyDraft.fromId === genealogyDraft.toId} onClick={() => confirmGenealogyLink()}>{genealogyDraft.type ? 'Créer : ' + genealogyDraft.type : 'Saisis une relation'}</button></div></section></div>}
     <footer className="statusbar"><span><span className="status-dot"/> Stockage local · {workspace.projects.length} projet(s)</span><span>Scriptorium · Version 0.2.0</span></footer>
   </main>
